@@ -1,0 +1,9 @@
+name: test
+world: 
+  name: MalmoWorld
+model: 
+  name: SimpleQModel
+# name: ManualModel
+  baseline: state
+trainer: 
+  name: SimpleTrainer

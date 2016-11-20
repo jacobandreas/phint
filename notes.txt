@@ -1,0 +1,18 @@
+tasks:
+  (find x)
+  (find (rel x))
+  (alter x y)
+  (alter (rel x) y)
+  (build x)
+
+model:
+  perception block
+  action block
+
+  low-level actions
+  meta-actions: alter perception, alter action
+
+  high-level actions from fixed (structured) policy
+  high-level actions from joint policy (action & perception params attentive)
+  high-level actions from joint policy (action & perception params free)
+  high-level actions via discrete search
