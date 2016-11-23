@@ -1,6 +1,7 @@
 from manual import ManualModel
 from simple_ac import SimpleACModel
 from simple_q import SimpleQModel
+from recurrent_q import RecurrentQModel
 
 def load(config, world):
     cls_name = config.model.name

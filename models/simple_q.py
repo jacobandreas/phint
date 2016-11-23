@@ -110,7 +110,7 @@ class SimpleQModel(object):
         total_err = 0
         for i_step in range(N_STEPS_PER_UPDATE):
             self.i_step += 1
-            batch_indices = [np.random.randint(len(experiences)) for _ in range(N_BATCH)]
+            batch_indices = [self.random.randint(len(experiences)) for _ in range(N_BATCH)]
             batch = [self.experiences[i_exp] for i_exp in batch_indices]
             s1, m1, a, s2, m2, r = zip(*batch)
             action_mask = np.zeros((len(batch), self.n_actions))

@@ -11,11 +11,13 @@ class SimpleTrainer(object):
         pass
 
     def train(self, world, model):
+        i_iter = 0
         counts = defaultdict(lambda: 0.)
         rewards = defaultdict(lambda: 0.)
-        i_iter = 0
+
         while True:
             task = world.sample_task()
+            print task.hint
             obs = world.reset([task])
             mstate = model.init([task.hint])[0]
             stop = False
@@ -31,15 +33,18 @@ class SimpleTrainer(object):
                     total_reward += rew
                 model.experience(buf)
                 err = model.train()
+                stop = True # TODO can we just pause the mission timer?
                 if err is not None:
                     logging.info("[err] %f", err)
 
             counts[task.hint] += 1
             rewards[task.hint] += total_reward
-            if (i_iter + 1) % 10 == 0:
+            if (i_iter + 1) % 100 == 0:
                 logging.info("[rewards]")
                 for hint in sorted(counts.keys()):
-                    logging.info("[reward %s] %f", util.pp_sexp(hint), 
-                            rewards[hint] / counts[hint])
+                    logging.info("[reward %s] %f (%d)", util.pp_sexp(hint), 
+                            rewards[hint] / counts[hint], counts[hint])
+                counts = defaultdict(lambda: 0.)
+                rewards = defaultdict(lambda: 0.)
 
             i_iter += 1

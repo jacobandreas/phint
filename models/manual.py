@@ -1,6 +1,8 @@
 import numpy as np
 import readchar
 
+from worlds.malmo.client_manager import *
+
 class ManualModel(object):
     def __init__(self, config, world):
         self.random = np.random.RandomState(0)
@@ -12,28 +14,28 @@ class ManualModel(object):
     def act(self, states):
         c = readchar.readchar()
         if c == "w":
-            a = self.world.forward
+            a = FORWARD
         elif c == "s":
-            a = self.world.back
+            a = BACK
         elif c == "a":
-            a = self.world.left
+            a = LEFT
         elif c == "d":
-            a = self.world.right
+            a = RIGHT
         elif c == "r":
-            a = self.world.up
+            a = UP
         elif c == "f":
-            a = self.world.down
+            a = DOWN
         elif c == "q":
-            a = self.world.attack
+            a = ATTACK
         elif c == "e":
-            a = self.world.use
+            a = USE
         elif c == " ":
-            a = self.world.jump
+            a = JUMP
         elif c == "x":
             exit()
         else:
             a = self.world.stop
-        a = self.world.actions.index(a)
+        a = ACTIONS.index(a)
         return [(a, None)]
 
     def experience(self, episode):
