@@ -1,4 +1,4 @@
-from malmo import MalmoWorld
+#from malmo import MalmoWorld
 from minicraft import MinicraftWorld
 
 def load(config):
