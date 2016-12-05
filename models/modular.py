@@ -11,9 +11,9 @@ N_BAD_BATCH = 100
 N_RAND_BATCH = 100
 N_GOOD_BATCH = 100
 N_BATCH = N_BAD_BATCH + N_RAND_BATCH + N_GOOD_BATCH
-N_STEPS_PER_UPDATE = 1
+N_STEPS_PER_UPDATE = 100
 N_EXPERIENCES = 10000
-N_UPDATE = 100
+N_UPDATE = 1000
 
 N_HISTORY = 10
 N_HINT = 5
@@ -74,8 +74,9 @@ class ModularModel(object):
                     t_init_hidden, _ = net.mlp(t_init_obs, (N_HIDDEN,),
                             final_nonlinearity=True)
                     repr_scope.reuse_variables()
-                    t_hidden, _ = net.mlp(t_obs, (N_HIDDEN,),
-                            final_nonlinearity=True)
+                    #t_hidden, _ = net.mlp(t_obs, (N_HIDDEN,),
+                    #        final_nonlinearity=True)
+                    t_hidden = t_obs
                 with tf.variable_scope("att"):
                     t_attention_key, _ = net.mlp(t_init_hidden, (N_EMBED,))
                 t_attention_rs = tf.reshape(t_attention_key, (-1, 1, N_HIDDEN))
