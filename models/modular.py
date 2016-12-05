@@ -172,7 +172,7 @@ class ModularModel(object):
         out = []
         for i_state in range(len(obs)):
             hint = self.mstates[i_state].hint
-            if self.random.rand() < max(0.1, (1000 - self.i_task_step[hint]) / 1000.):
+            if self.random.rand() < max(0.1, (10000 - self.i_task_step[hint]) / 10000.):
                 action = self.random.randint(self.n_actions)
             else:
                 action = np.argmax(q[i_state, :])
