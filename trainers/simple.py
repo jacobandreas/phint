@@ -6,6 +6,8 @@ import logging
 import numpy as np
 import time
 
+N_ROLLOUT_BATCH = 100
+
 class SimpleTrainer(object):
     def __init__(self, config):
         pass
@@ -16,35 +18,41 @@ class SimpleTrainer(object):
         rewards = defaultdict(lambda: 0.)
 
         while True:
-            task = world.sample_task()
-            print task.hint
-            obs = world.reset([task])
-            mstate = model.init([task.hint])[0]
-            stop = False
-            total_reward = 0
-            while not stop:
-                buf = []
-                while len(buf) < 1000 and not stop:
-                    action, mstate_ = model.act([obs])[0]
-                    obs_, rew, stop = world.step([action], [task])
-                    buf.append(Transition(obs, mstate, action, obs_, mstate_, rew))
-                    obs = obs_
-                    mstate = mstate_
-                    total_reward += rew
-                model.experience(buf)
-                err = model.train()
-                stop = True # TODO can we just pause the mission timer?
-                if err is not None:
-                    logging.info("[err] %f", err)
+            tasks = [world.sample_task() for _ in range(N_ROLLOUT_BATCH)]
+            obs = world.reset(tasks)
+            mstates = model.init([t.hint for t in tasks])
+            stops = [False] * N_ROLLOUT_BATCH
+            bufs = [[] for _ in range(N_ROLLOUT_BATCH)]
+            total_rewards = np.zeros(N_ROLLOUT_BATCH)
+            while max(len(b) for b in bufs) < 100 and not all(stops):
+                actions, mstates_ = model.act(obs)
+                obs_, rew, stops_ = world.step(actions, tasks)
+                for i in range(N_ROLLOUT_BATCH):
+                    if not stops[i]:
+                        bufs[i].append(Transition(obs[i], mstates[i], actions[i],
+                            obs_[i], mstates_[i], rew[i]))
+                        total_rewards[i] += rew[i]
+                obs = obs_
+                mstates = mstates_
+                stops = stops_
 
-            counts[task.hint] += 1
-            rewards[task.hint] += total_reward
-            if (i_iter + 1) % 100 == 0:
-                logging.info("[rewards]")
+            for buf in bufs:
+                model.experience(buf)
+            for task, rew in zip(tasks, total_rewards):
+                counts[task.hint] += 1
+                rewards[task.hint] += rew
+
+            err = model.train()
+            if err is not None:
+                logging.info("[err] %d %f", i_iter, err)
+
+            i_iter += 1
+
+            if i_iter % 100 == 0:
+                logging.info("[rewards %d]", N_ROLLOUT_BATCH * i_iter)
                 for hint in sorted(counts.keys()):
                     logging.info("[reward %s] %f (%d)", util.pp_sexp(hint), 
                             rewards[hint] / counts[hint], counts[hint])
                 counts = defaultdict(lambda: 0.)
                 rewards = defaultdict(lambda: 0.)
 
-            i_iter += 1

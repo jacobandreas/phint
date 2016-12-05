@@ -1,8 +1,9 @@
 name: test
 world: 
-  name: MalmoWorld
+# name: MalmoWorld
+  name: MinicraftWorld
 model: 
-  name: RecurrentQModel
+  name: ModularModel
 # name: ManualModel
   baseline: state
 trainer: 

@@ -33,8 +33,8 @@ OBS_HSIZE_BIG = OBS_HBOUNDS_BIG[1] - OBS_HBOUNDS_BIG[0] + 1
 OBS_VSIZE = OBS_VBOUNDS[1] - OBS_VBOUNDS[0] + 1
 OBS_VSIZE_BIG = OBS_VBOUNDS_BIG[1] - OBS_VBOUNDS_BIG[0] + 1
 
-TICK = 8
-TICK_SCALE = 4
+TICK = 10
+TICK_SCALE = 5
 
 
 # SPECS
@@ -111,8 +111,12 @@ SPEC_TEMPLATE = """<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
                 <min x="{ob_nh}" y="{ob_nv}" z="{ob_nh}"/>
                 <max x="{ob_ph}" y="{ob_pv}" z="{ob_ph}"/>
             </Grid>
+            <Grid name="sensor" absoluteCoords="true">
+                <min x="{nh}" y="{nv}" z="{nh}"/>
+                <max x="{ph}" y="{pv}" z="{ph}"/>
+            </Grid>
         </ObservationFromGrid>
-        <DiscreteMovementCommands autoJump="true"/>
+        <DiscreteMovementCommands autoJump="true" autoFall="true"/>
         <MissionQuitCommands/>
       </AgentHandlers>
     </AgentSection>
@@ -199,6 +203,7 @@ DOWN = _make_discrete_action("look 1")
 JUMP = _make_discrete_action("jump 1")
 ATTACK = _make_discrete_action("attack 1")
 USE = _make_discrete_action("use 1")
+#ACTIONS = [FORWARD, LEFT, RIGHT, UP, DOWN, ATTACK, USE]
 ACTIONS = [FORWARD, LEFT, RIGHT]
 N_ACTIONS = len(ACTIONS)
 
@@ -254,6 +259,10 @@ class Client(object):
 
         n_materials = resources.N_MATERIALS
 
+        # TODO what?
+        if "agent_near" not in obs:
+            return
+        
         near = obs["agent_near"]
         feats_near = np.zeros((len(near), n_materials))
         for i, o in enumerate(near):
@@ -274,8 +283,8 @@ class Client(object):
             OBS_HBOUNDS_BIG_SCALE, OBS_HBOUNDS_BIG_SCALE, 1), func=np.mean)
         feats_far = feats_far.transpose((1, 2, 0, 3))
 
-        assert self.coordinate.yaw % 90 == 0
-        rot = self.coordinate.yaw / 90
+        assert yaw % 90 == 0
+        rot = yaw / 90
         feats_near = np.rot90(feats_near, rot)
         feats_far = np.rot90(feats_far, rot)
 
@@ -284,8 +293,12 @@ class Client(object):
 
         feats_near = feats_near.ravel()
         feats_far = feats_far.ravel()
-        feats_coord = [self.coordinate.x / 10., self.coordinate.y / 10.,
-                self.coordinate.z / 10., self.coordinate.pitch / 360., 
-                self.coordinate.yaw / 360.]
+        feats_coord = [x / 10., y / 10., z / 10., pitch / 360., yaw / 360.]
 
         self.features = np.concatenate((feats_near, feats_far, feats_coord))
+
+        self.material_counts = np.zeros(n_materials)
+        sensor = obs["sensor"]
+        for o in sensor:
+            idx = resources.MATERIAL_INDEX[resources.TYPE_TO_NAME[o]] or 0
+            self.material_counts[idx] += 1
