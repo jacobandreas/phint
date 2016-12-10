@@ -26,7 +26,7 @@ N_TASKS = 100
 
 DISCOUNT = 0.9
 
-InputBundle = namedtuple("InputBundle", ["t_hint", "t_init_obs", "t_obs",
+InputBundle = namedtuple("InputBundle", ["t_hint", "t_task", "t_init_obs", "t_obs",
     "t_obs_target", "t_action_mask", "t_reward"])
 QBundle = namedtuple("QBundle", ["t_q", "t_q_chosen", "t_q_best", "t_attention", "vars"])
 ModelState = namedtuple("ModelState", ["hint", "init_obs", "index"])
@@ -40,6 +40,7 @@ class ModularModel(object):
         self.config = config
         self.random = np.random.RandomState(0)
         self.prepare(world)
+        self.task_index = util.Index()
 
     def prepare(self, world):
         self.world = world
@@ -53,11 +54,13 @@ class ModularModel(object):
         self.next_hint_action = world.n_actions + 1
         self.n_actions = self.next_hint_action + 1
 
-        self.optimizer = tf.train.AdamOptimizer(0.001)
+        #self.optimizer = tf.train.AdamOptimizer(0.00003) # 15.2
+        self.optimizer = tf.train.AdamOptimizer(0.00001)
         #self.optimizer = tf.train.AdamOptimizer(0.003)
 
         # shared
         t_hint = tf.placeholder(tf.int32, shape=(None, N_HINT))
+        t_task = tf.placeholder(tf.int32, shape=(None,))
 
         # one step
         t_init_obs = tf.placeholder(tf.float32, shape=(None, self.n_features))
@@ -68,7 +71,10 @@ class ModularModel(object):
 
         def build_net(name, t_hint, t_obs, t_action_mask):
             with tf.variable_scope(name) as scope:
-                t_embed_hint, _ = net.embed(t_hint, N_TASKS, N_EMBED)
+                with tf.variable_scope("hint"):
+                    t_embed_hint, _ = net.embed(t_hint, N_TASKS, N_EMBED)
+                with tf.variable_scope("task"):
+                    t_embed_task, _ = net.embed(t_task, N_TASKS, N_EMBED)
 
                 with tf.variable_scope("repr") as repr_scope:
                     t_init_hidden, _ = net.mlp(t_init_obs, (N_HIDDEN,),
@@ -91,7 +97,7 @@ class ModularModel(object):
                 t_hint_repr = tf.reduce_sum(t_hint_weighted,
                         reduction_indices=(1,))
 
-                t_concat = tf.concat(1, (t_hidden, t_hint_repr))
+                t_concat = tf.concat(1, (t_hidden, t_hint_repr, t_embed_task))
                 with tf.variable_scope("act"):
                     t_q, _ = net.mlp(t_concat, (N_HIDDEN, self.n_actions))
 
@@ -119,8 +125,8 @@ class ModularModel(object):
         self.t_err = t_err
         self.t_train_op = t_train_op
         self.t_update_ops = t_update_ops
-        self.inputs = InputBundle(t_hint, t_init_obs, t_obs, t_obs_target,
-                t_action_mask, t_reward)
+        self.inputs = InputBundle(t_hint, t_task, t_init_obs, t_obs,
+                t_obs_target, t_action_mask, t_reward)
 
         self.session = tf.Session()
         self.session.run(tf.initialize_all_variables())
@@ -157,14 +163,17 @@ class ModularModel(object):
 
     def act(self, obs):
         hints = np.zeros((len(obs), N_HINT))
+        tasks = np.zeros(len(obs))
         init_obs = np.zeros((len(obs), self.n_features))
         attention = np.zeros((len(obs), N_HINT, 1))
         for i, m in enumerate(self.mstates):
             hints[i, :len(m.hint)] = m.hint
             init_obs[i, :] = m.init_obs
             attention[i, min(m.index, N_HINT-1), 0] = 1
+            tasks[i] = self.task_index.index(m.hint)
         feed_dict = {
             self.inputs.t_hint: hints,
+            self.inputs.t_task: tasks,
             #self.inputs.t_init_obs: init_obs,
             self.qnet.t_attention: attention,
             self.inputs.t_obs: np.asarray(obs),
@@ -206,6 +215,7 @@ class ModularModel(object):
             action_masks = np.zeros((N_BATCH, self.n_actions))
             rewards = np.zeros((N_BATCH,))
             hints = np.zeros((N_BATCH, N_HINT))
+            tasks = np.zeros(N_BATCH)
             for i_experience in range(N_BATCH):
                 exp = batch[i_experience]
                 states0[i_experience, :] = exp.m1.init_obs
@@ -214,8 +224,10 @@ class ModularModel(object):
                 action_masks[i_experience, exp.a] = 1
                 rewards[i_experience] = exp.r
                 hints[i_experience, :len(exp.m1.hint)] = exp.m1.hint
+                tasks[i_experience] = self.task_index[exp.m1.hint]
             feed_dict = {
                 self.inputs.t_hint: hints,
+                self.inputs.t_task: tasks,
                 self.inputs.t_init_obs: states0,
                 self.inputs.t_obs: states1,
                 self.inputs.t_obs_target: states2,

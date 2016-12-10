@@ -1,0 +1,31 @@
+environment: {}
+
+primitives:
+  - L
+  - R
+
+  - LL
+  - LU
+  - LD
+  - RR
+  - RU
+  - RD
+  - UL
+  - UR
+  - UU
+  - DL
+  - DR
+  - DD
+
+  - URU
+  - DRU
+  - LLD
+  - RDD
+  - LUR
+
+  - left
+  - right
+  - up
+  - down
+
+recipes: {}

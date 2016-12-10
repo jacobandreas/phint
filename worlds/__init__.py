@@ -1,5 +1,6 @@
 #from malmo import MalmoWorld
 from minicraft import MinicraftWorld
+from maze import MazeWorld
 
 def load(config):
     cls_name = config.world.name

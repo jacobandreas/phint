@@ -32,15 +32,16 @@ class SimpleTrainer(object):
                         bufs[i].append(Transition(obs[i], mstates[i], actions[i],
                             obs_[i], mstates_[i], rew[i]))
                         total_rewards[i] += rew[i]
+                        stops[i] = stops_[i]
                 obs = obs_
                 mstates = mstates_
-                stops = stops_
 
             for buf in bufs:
                 model.experience(buf)
             for task, rew in zip(tasks, total_rewards):
                 counts[task.hint] += 1
                 rewards[task.hint] += rew
+                assert rew <= 1
 
             err = model.train()
             if err is not None:
@@ -50,9 +51,13 @@ class SimpleTrainer(object):
 
             if i_iter % 100 == 0:
                 logging.info("[rewards %d]", N_ROLLOUT_BATCH * i_iter)
+                total = 0.
                 for hint in sorted(counts.keys()):
+                    score = rewards[hint] / counts[hint]
                     logging.info("[reward %s] %f (%d)", util.pp_sexp(hint), 
-                            rewards[hint] / counts[hint], counts[hint])
+                            score, counts[hint])
+                    total += score
+                logging.info("[reward mean] %f", total / len(counts))
                 counts = defaultdict(lambda: 0.)
                 rewards = defaultdict(lambda: 0.)
 
