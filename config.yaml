@@ -1,10 +1,8 @@
 name: test
 world: 
-# name: MalmoWorld
   name: MinicraftWorld
 model: 
   name: ModularModel
-# name: ManualModel
   baseline: state
 trainer: 
-  name: SimpleTrainer
+  name: CurriculumTrainer

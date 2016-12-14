@@ -1,4 +1,4 @@
-from simple import SimpleTrainer
+from curriculum import CurriculumTrainer
 
 def load(config):
     cls_name = config.trainer.name

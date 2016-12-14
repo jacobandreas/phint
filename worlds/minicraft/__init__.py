@@ -80,9 +80,9 @@ class MinicraftWorld(object):
 
         self.random = np.random.RandomState(0)
 
-    def sample_task(self):
-        #mission = MinicraftMission("wood", (("get", "wood"),))
-        goal = self.random.choice(self.hints.keys())
+    def sample_task(self, max_len=10):
+        available_goals = [g for g, h in self.hints.items() if len(h) <= max_len]
+        goal = self.random.choice(available_goals)
         hint = self.hints[goal]
         mission = MinicraftMission(goal, hint)
         init_state = self.sample_state_with_goal(mission.goal)
@@ -98,15 +98,20 @@ class MinicraftWorld(object):
         for a, t in zip(actions, tasks):
             reward, nstate = t.state.step(a)
             t.state = nstate
-            if t.state.inventory[self.cookbook.index[t.mission.goal]] > 0:
-                stop = True
-                reward += 1
-            else:
-                stop = False
+            stop = False
             features.append(nstate.features())
             rewards.append(reward)
             stops.append(stop)
         return features, rewards, stops
+
+    def complete(self, tasks):
+        rewards = []
+        for t in tasks:
+            if t.state.inventory[self.cookbook.index[t.mission.goal]] > 0:
+                rewards.append(1.)
+            else:
+                rewards.append(0.)
+        return rewards
 
     def sample_state_with_goal(self, goal):
         goal = self.cookbook.index[goal]
