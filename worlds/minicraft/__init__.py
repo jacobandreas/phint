@@ -63,12 +63,12 @@ class MinicraftWorld(object):
                 assert arg in self.cookbook.index
                 self.hints[arg] = tuple(hints[goal])
 
-        self.n_features = \
+        self.n_obs = \
                 2 * WINDOW_WIDTH * WINDOW_HEIGHT * self.cookbook.n_kinds + \
                 self.cookbook.n_kinds + \
                 4 + \
                 1
-        self.n_actions = N_ACTIONS
+        self.n_act = N_ACTIONS
 
         self.non_grabbable_indices = self.cookbook.environment
         self.grabbable_indices = [i for i in range(self.cookbook.n_kinds)
@@ -209,7 +209,7 @@ class MinicraftState(object):
             features = np.concatenate((grid_feats.ravel(),
                     grid_feats_big_red.ravel(), self.inventory, 
                     dir_features, [0]))
-            assert len(features) == self.world.n_features
+            assert len(features) == self.world.n_obs
             self._cached_features = features
 
         return self._cached_features

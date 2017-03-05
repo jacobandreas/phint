@@ -1,8 +1,28 @@
 name: test
+
 world: 
   name: MinicraftWorld
+
+guide:
+  name: SketchGuide
+
 model: 
   name: ModularModel
-  baseline: state
+  actor:
+    type: discrete
+    n_hidden: [128]
+    ret_bias: -3
+  controller:
+    type: sketch
+  critic:
+    type: linear
+
+objective:
+  discount: 0.9
+  n_train_batch: 2000
+
 trainer: 
   name: CurriculumTrainer
+  max_rollout_len: 100
+  n_update: 100
+  n_rollout_batch: 100

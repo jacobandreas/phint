@@ -1,6 +1,3 @@
-#"get[wood]":
-#  ["get_wood"]
-
 "make[plank]":
   ["get_wood", "make0"]
 

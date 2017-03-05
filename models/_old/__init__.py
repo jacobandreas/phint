@@ -5,10 +5,10 @@
 #from memory import MemoryModel
 from modular import ModularModel
 
-def load(config, *args):
+def load(config, world):
     cls_name = config.model.name
     try:
         cls = globals()[cls_name]
-        return cls(config, *args)
+        return cls(config, world)
     except KeyError:
         raise Exception("No such model: {}".format(cls_name))

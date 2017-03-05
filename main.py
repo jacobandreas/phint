@@ -1,7 +1,9 @@
 from misc.util import Struct
-import models
-import trainers
+import guides
 import worlds
+import models
+from objectives.reinforce import Reinforce
+import trainers
 
 import logging
 import numpy as np
@@ -14,9 +16,11 @@ import yaml
 def main():
     config = configure()
     world = worlds.load(config)
-    model = models.load(config, world)
+    guide = guides.load(config)
+    model = models.load(config, world, guide)
+    objectives = Reinforce(config, model)
     trainer = trainers.load(config)
-    trainer.train(world, model)
+    trainer.train(world, model, objectives)
 
 def configure():
     # load config

@@ -1,4 +1,6 @@
 import re
+import numpy as np
+import tensorflow as tf
 
 class Struct:
     def __init__(self, **entries):
@@ -105,3 +107,14 @@ def pp_sexp(sexp):
     if not isinstance(sexp, tuple):
         return str(sexp)
     return "(" + " ".join([pp_sexp(s) for s in sexp]) + ")"
+
+random_counter = [0]
+def next_random():
+    random = np.random.RandomState(random_counter[0])
+    random_counter[0] += 1
+    return random
+
+def batch_gather(params, indices):
+    ids = tf.range(tf.shape(indices)[0])
+    full = tf.stack((ids, indices), axis=1)
+    return tf.gather_nd(params, full)

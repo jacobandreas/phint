@@ -5,14 +5,18 @@ from collections import defaultdict
 import logging
 import numpy as np
 import time
-
-N_ROLLOUT_BATCH = 50
+import tensorflow as tf
 
 class CurriculumTrainer(object):
     def __init__(self, config):
-        pass
+        self.config = config
+        self.session = tf.Session()
 
-    def train(self, world, model):
+    def train(self, world, model, objective):
+        self.session.run(tf.global_variables_initializer())
+        n_update = self.config.trainer.n_update
+        n_batch = self.config.trainer.n_rollout_batch
+
         i_iter = 0
         counts = defaultdict(lambda: 0.)
         rewards = defaultdict(lambda: 0.)
@@ -21,60 +25,58 @@ class CurriculumTrainer(object):
 
         while True:
             try:
-                tasks = [world.sample_task(max_len=max_len) for _ in range(N_ROLLOUT_BATCH)]
+                task = [world.sample_task(max_len=max_len) for _ in range(n_batch)]
             except:
                 max_len += 1
                 continue
-            obs = world.reset(tasks)
-            mstates = model.init([t.hint for t in tasks])
-            stops = [False] * N_ROLLOUT_BATCH
-            bufs = [[] for _ in range(N_ROLLOUT_BATCH)]
-            total_rewards = np.zeros(N_ROLLOUT_BATCH)
-            while max(len(b) for b in bufs) < 100 and not all(stops):
-                actions, probs, mstates_, agent_stops = model.act(obs)
-                obs_, rew, world_stops = world.step(actions, tasks)
-                complete_rew = world.complete(tasks)
-                for i in range(N_ROLLOUT_BATCH):
-                    if not stops[i]:
+            obs = world.reset(task)
+            mstate = model.init(task, obs)
+            stop = [False] * n_batch
+            buf = [[] for _ in range(n_batch)]
+            total_reward = np.zeros(n_batch)
+            # TODO magic number
+            while max(len(b) for b in buf) < self.config.trainer.max_rollout_len and not all(stop):
+                action, agent_stop, mstate_ = model.act(obs, mstate, task, self.session)
+                world_action, _  = zip(*action)
+                obs_, rew, world_stop = world.step(world_action, task)
+                complete_rew = world.complete(task)
+                for i in range(n_batch):
+                    if not stop[i]:
                         rew_here = rew[i]
-                        if agent_stops[i]:
+                        if agent_stop[i]:
                             rew_here += complete_rew[i]
-                        total_rewards[i] += rew_here
-                        bufs[i].append(Transition(obs[i], mstates[i], actions[i],
-                            obs_[i], mstates_[i], rew_here, probs[i]))
-                        stops[i] = agent_stops[i] or world_stops[i]
-                        assert mstates[i].index < len(mstates[i].hint)
-
-                #print np.asarray(stops).astype(int)
-                #print
+                        total_reward[i] += rew_here
+                        buf[i].append(Transition(obs[i], mstate[i], action[i],
+                            obs_[i], mstate_[i], rew_here))
+                        stop[i] = agent_stop[i] or world_stop[i]
+                        #assert mstate[i].index < len(mstate[i].hint)
 
                 obs = obs_
-                mstates = mstates_
+                mstate = mstate_
 
-            for buf in bufs:
-                model.experience(buf)
-            for task, rew in zip(tasks, total_rewards):
-                assert rew <= 1
-                counts[task.hint] += 1
-                rewards[task.hint] += rew
+            objective.experience(buf)
+            for t, r in zip(task, total_reward):
+                assert r <= 1
+                counts[t.hint] += 1
+                rewards[t.hint] += r
 
-            e = model.train()
-            if e is not None:
-                err += e
-            else:
+            if not objective.ready():
                 continue
-
+            err += objective.train(self.session)
             i_iter += 1
 
-            if i_iter % 10 == 0:
-                logging.info("[err] %d %s", i_iter, err)
-                logging.info("[rewards %d]", N_ROLLOUT_BATCH * i_iter)
+            examples = [[t.a for t in b] for b in buf[:3]]
+
+            if i_iter % n_update == 0:
+                logging.info("[err] %d %s", i_iter, err / n_update)
+                logging.info("[rewards %d]", self.config.objective.n_train_batch * i_iter)
                 min_score = 1
                 for hint in sorted(counts.keys()):
                     score = rewards[hint] / counts[hint]
                     logging.info("[reward %s] %f (%d)", util.pp_sexp(hint), 
                             score, counts[hint])
                     min_score = min(score, min_score)
+                logging.info("\n"+"\n".join([str(e) for e in examples]))
                 if min_score > 0.8:
                     max_len += 1
                 counts = defaultdict(lambda: 0.)
