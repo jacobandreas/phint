@@ -7,6 +7,7 @@ import numpy as np
 import time
 import tensorflow as tf
 
+
 class CurriculumTrainer(object):
     def __init__(self, config):
         self.config = config
@@ -14,7 +15,6 @@ class CurriculumTrainer(object):
 
     def train(self, world, model, objective):
         self.session.run(tf.global_variables_initializer())
-        n_update = self.config.trainer.n_update
         n_batch = self.config.trainer.n_rollout_batch
 
         i_iter = 0
@@ -29,31 +29,8 @@ class CurriculumTrainer(object):
             except:
                 max_len += 1
                 continue
-            obs = world.reset(task)
-            mstate = model.init(task, obs)
-            stop = [False] * n_batch
-            buf = [[] for _ in range(n_batch)]
-            total_reward = np.zeros(n_batch)
-            # TODO magic number
-            while max(len(b) for b in buf) < self.config.trainer.max_rollout_len and not all(stop):
-                action, agent_stop, mstate_ = model.act(obs, mstate, task, self.session)
-                world_action, _  = zip(*action)
-                obs_, rew, world_stop = world.step(world_action, task)
-                complete_rew = world.complete(task)
-                for i in range(n_batch):
-                    if not stop[i]:
-                        rew_here = rew[i]
-                        if agent_stop[i]:
-                            rew_here += complete_rew[i]
-                        total_reward[i] += rew_here
-                        buf[i].append(Transition(obs[i], mstate[i], action[i],
-                            obs_[i], mstate_[i], rew_here))
-                        stop[i] = agent_stop[i] or world_stop[i]
-                        #assert mstate[i].index < len(mstate[i].hint)
 
-                obs = obs_
-                mstate = mstate_
-
+            buf, total_reward = self.do_rollout(world, task, model, n_batch)
             objective.experience(buf)
             for t, r in zip(task, total_reward):
                 assert r <= 1
@@ -67,6 +44,7 @@ class CurriculumTrainer(object):
 
             examples = [[t.a for t in b] for b in buf[:3]]
 
+            n_update = self.config.trainer.n_update
             if i_iter % n_update == 0:
                 logging.info("[err] %d %s", i_iter, err / n_update)
                 logging.info("[rewards %d]", self.config.objective.n_train_batch * i_iter)
@@ -83,3 +61,27 @@ class CurriculumTrainer(object):
                 rewards = defaultdict(lambda: 0.)
                 err = 0
 
+    def do_rollout(self, world, task, model, n_batch):
+        obs = world.reset(task)
+        mstate = model.init(task, obs)
+        stop = [False] * n_batch
+        buf = [[] for _ in range(n_batch)]
+        total_reward = np.zeros(n_batch)
+        # TODO magic number
+        while max(len(b) for b in buf) < self.config.trainer.max_rollout_len and not all(stop):
+            action, agent_stop, mstate_ = model.act(obs, mstate, task, self.session)
+            world_action, _  = zip(*action)
+            obs_, rew, world_stop = world.step(world_action, task)
+            complete_rew = world.complete(task)
+            for i in range(n_batch):
+                if not stop[i]:
+                    rew_here = rew[i]
+                    if agent_stop[i]:
+                        rew_here += complete_rew[i]
+                    total_reward[i] += rew_here
+                    buf[i].append(Transition(obs[i], mstate[i], action[i],
+                        obs_[i], mstate_[i], rew_here))
+                    stop[i] = agent_stop[i] or world_stop[i]
+            obs = obs_
+            mstate = mstate_
+        return buf, total_reward
