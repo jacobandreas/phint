@@ -51,6 +51,14 @@ class MinicraftTask(object):
         self.state = init_state
         self.hint = mission.hint
 
+    def __hash__(self):
+        return hash((self.mission, self.state))
+
+    def __eq__(self, other):
+        if not isinstance(other, MinicraftTask):
+            return False
+        return self.mission == other.mission and self.state == other.state
+
 class MinicraftWorld(object):
     def __init__(self, config):
         self.config = config
@@ -69,6 +77,7 @@ class MinicraftWorld(object):
                 4 + \
                 1
         self.n_act = N_ACTIONS
+        self.n_tasks = len(self.hints)
 
         self.non_grabbable_indices = self.cookbook.environment
         self.grabbable_indices = [i for i in range(self.cookbook.n_kinds)

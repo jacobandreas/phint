@@ -19,6 +19,7 @@ model:
 
 objective:
   discount: 0.9
+  entropy_penalty: 0.001
   n_train_batch: 2000
 
 trainer: 
@@ -26,3 +27,4 @@ trainer:
   max_rollout_len: 100
   n_update: 100
   n_rollout_batch: 100
+  parallel: 4

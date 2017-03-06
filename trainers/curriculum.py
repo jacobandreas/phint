@@ -1,12 +1,12 @@
 from misc.experience import Transition
 from misc import util
+import worlds
 
 from collections import defaultdict
 import logging
 import numpy as np
 import time
 import tensorflow as tf
-
 
 class CurriculumTrainer(object):
     def __init__(self, config):
@@ -18,6 +18,7 @@ class CurriculumTrainer(object):
         n_batch = self.config.trainer.n_rollout_batch
 
         i_iter = 0
+        i_rollout = 0
         counts = defaultdict(lambda: 0.)
         rewards = defaultdict(lambda: 0.)
         err = 0
@@ -31,6 +32,7 @@ class CurriculumTrainer(object):
                 continue
 
             buf, total_reward = self.do_rollout(world, task, model, n_batch)
+            i_rollout += self.config.trainer.n_rollout_batch
             objective.experience(buf)
             for t, r in zip(task, total_reward):
                 assert r <= 1
@@ -47,7 +49,7 @@ class CurriculumTrainer(object):
             n_update = self.config.trainer.n_update
             if i_iter % n_update == 0:
                 logging.info("[err] %d %s", i_iter, err / n_update)
-                logging.info("[rewards %d]", self.config.objective.n_train_batch * i_iter)
+                logging.info("[rewards %d %d]", i_rollout, self.config.objective.n_train_batch * i_iter)
                 min_score = 1
                 for hint in sorted(counts.keys()):
                     score = rewards[hint] / counts[hint]

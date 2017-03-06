@@ -6,14 +6,10 @@ import logging
 import numpy as np
 import tensorflow as tf
 
-N_RECURRENT = 64
-N_HIDDEN = 128
-N_EMBED = 64
-
 INIT_SCALE = 1.43
 
 ActorState = namedtuple("ActorState", ["step"])
-ControllerState = namedtuple("ControllerState", ["obs", "hint", "index"])
+ControllerState = namedtuple("ControllerState", ["task", "hint", "obs", "index"])
 
 class DiscreteDist(object):
     def __init__(self):
@@ -31,6 +27,11 @@ class DiscreteDist(object):
         t_log_prob = tf.nn.log_softmax(t_score)
         t_chosen = util.batch_gather(t_log_prob, t_action)
         return t_chosen
+
+    def entropy(self, t_param, t_temp):
+        t_prob = tf.nn.softmax(t_param)
+        t_logprob = tf.log(t_prob)
+        return tf.reduce_sum(t_prob * t_logprob, axis=1)
 
 class DiscreteActors(object):
     def __init__(self, config, t_obs, world, guide):
@@ -75,11 +76,11 @@ class DiscreteActors(object):
 
         self.t_action_temp = tf.get_variable(
                 "action_temp",
-                shape=(guide.n_modules,), 
+                shape=(guide.n_modules,),
                 initializer=tf.constant_initializer(0))
         self.t_ret_temp = tf.get_variable(
                 "ret_temp",
-                shape=(), 
+                shape=(guide.n_modules,),
                 initializer=tf.constant_initializer(0))
 
     def init(self, task, obs):
@@ -99,21 +100,27 @@ class LinearCritic(object):
         with tf.variable_scope("critic"):
             v_w = tf.get_variable(
                     "w",
-                    shape=(world.n_obs,),
+                    shape=(world.n_obs, world.n_tasks+1),
                     initializer=tf.uniform_unit_scaling_initializer(
                         factor=INIT_SCALE))
             v_b = tf.get_variable(
-                    "b", shape=(), initializer=tf.constant_initializer(0))
-            #self.t_value = tf.reduce_sum(t_obs * v_w, axis=1) + v_b
-            self.t_value = v_b
+                    "b",
+                    shape=(world.n_tasks+1),
+                    initializer=tf.constant_initializer(0))
+            self.t_value = tf.einsum("ij,jk->ik", t_obs, v_w) + v_b
 
 class SketchController(object):
     def __init__(self, config, t_obs, world, guide):
         self.guide = guide
+        self.task_index = util.Index()
         self.t_attention = tf.placeholder(tf.float32, shape=(None, guide.n_modules))
+        self.t_task = tf.placeholder(tf.int32, shape=(None,))
 
     def init(self, task, obs):
-        return [ControllerState(None, self.guide.guide_for(t), 0) for t in task]
+        return [ControllerState(
+                    self.task_index.index(t.mission), self.guide.guide_for(t),
+                    None, 0)
+                for t in task]
 
     def feed(self, state):
         attention = np.zeros((len(state), self.guide.n_modules))
@@ -121,7 +128,10 @@ class SketchController(object):
             if s.index >= len(s.hint):
                 continue
             attention[i, s.hint[s.index]] = 1
-        return {self.t_attention: attention}
+        return {
+            self.t_attention: attention,
+            self.t_task: [s.task for s in state]
+        }
 
     def step(self, state, action, ret):
         state_ = []
@@ -175,7 +185,7 @@ class ModularModel(object):
                 self.actors.t_action_temp * t_att, axis=1)
         self.t_ret_temp = tf.reduce_sum(
                 self.actors.t_ret_temp * t_att, axis=1)
-        self.t_baseline = self.critic.t_value
+        self.t_baseline = util.batch_gather(self.critic.t_value, self.controller.t_task)
 
     def init(self, task, obs):
         actor_state = self.actors.init(task, obs)
@@ -202,7 +212,7 @@ class ModularModel(object):
         action = self.action_dist.sample(action_p, action_t)
         ret = self.action_dist.sample(ret_p, ret_t)
         any_ret = list(ret)
-        
+
         actor_state_ = self.actors.step(actor_state, action, ret)
 
         for i in range(len(obs)):
