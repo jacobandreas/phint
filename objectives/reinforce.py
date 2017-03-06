@@ -45,7 +45,7 @@ class Reinforce(object):
             self.t_ret: ret,
             self.t_reward: r,
         }
-        feed.update(self.model.feed(s1, m2))
+        feed.update(self.model.feed(s1, m1))
 
         actor_err, critic_err, _, _, b = session.run(
                 [self.t_actor_loss, self.t_critic_loss, 

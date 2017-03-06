@@ -67,7 +67,6 @@ class CurriculumTrainer(object):
         stop = [False] * n_batch
         buf = [[] for _ in range(n_batch)]
         total_reward = np.zeros(n_batch)
-        # TODO magic number
         while max(len(b) for b in buf) < self.config.trainer.max_rollout_len and not all(stop):
             action, agent_stop, mstate_ = model.act(obs, mstate, task, self.session)
             world_action, _  = zip(*action)
@@ -81,7 +80,7 @@ class CurriculumTrainer(object):
                     total_reward[i] += rew_here
                     buf[i].append(Transition(obs[i], mstate[i], action[i],
                         obs_[i], mstate_[i], rew_here))
-                    stop[i] = agent_stop[i] or world_stop[i]
+                    stop[i] = stop[i] or agent_stop[i] or world_stop[i]
             obs = obs_
             mstate = mstate_
         return buf, total_reward

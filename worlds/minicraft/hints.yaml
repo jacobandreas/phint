@@ -1,3 +1,9 @@
+#"make[wood]":
+#  ["get_wood"]
+#
+#"make[grass]":
+#  ["get_grass"]
+
 "make[plank]":
   ["get_wood", "make0"]
 
