@@ -19,7 +19,9 @@ model:
 
 objective:
   discount: 0.9
-  entropy_penalty: 0.001
+  action_hcost: 0.001
+  ret_hcost: 0.
+  step_size: 0.001
   n_train_batch: 2000
 
 trainer: 
