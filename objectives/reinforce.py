@@ -16,7 +16,9 @@ class Reinforce(object):
         t_actor_log_prob = t_actor_log_action_prob + t_actor_log_ret_prob
         self.t_actor_loss = tf.reduce_mean(
                 - t_actor_log_prob * (self.t_reward - tf.stop_gradient(model.t_baseline))
-                + config.objective.entropy_penalty * model.action_dist.entropy(model.t_action_param, model.t_action_temp))
+                + config.objective.entropy_penalty * (
+                    model.action_dist.entropy(model.t_action_param, model.t_action_temp)
+                    + model.action_dist.entropy(model.t_ret_param, model.t_ret_temp))
         self.t_critic_loss = tf.reduce_mean(
                 tf.square(self.t_reward - model.t_baseline))
 
