@@ -13,31 +13,46 @@ class CurriculumTrainer(object):
         self.config = config
         self.session = tf.Session()
 
+    def _recompute_task_probs(self, world, counts, rewards, max_len):
+        probs = np.zeros(world.n_tasks)
+        #print
+        #print counts
+        #print rewards
+        for i, task in enumerate(world.tasks):
+            if len(task.hint) > max_len:
+                continue
+            #print task, task.hint
+            probs[i] = 1 - rewards[task] / counts[task]
+        if not probs.any():
+            return None
+        probs /= np.sum(probs)
+        return probs
+
     def train(self, world, model, objective):
         self.session.run(tf.global_variables_initializer())
         n_batch = self.config.trainer.n_rollout_batch
 
         i_iter = 0
         i_rollout = 0
-        counts = defaultdict(lambda: 0.)
+        counts = defaultdict(lambda: 1.) # ick
         rewards = defaultdict(lambda: 0.)
         err = 0
         max_len = 1
 
         while True:
-            try:
-                task = [world.sample_task(max_len=max_len) for _ in range(n_batch)]
-            except:
+            task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
+            if task_probs is None:
                 max_len += 1
                 continue
 
-            buf, total_reward = self.do_rollout(world, task, model, n_batch)
+            inst = [world.sample_instance(task_probs) for _ in range(n_batch)]
+            buf, total_reward = self.do_rollout(world, inst, model, n_batch)
             i_rollout += self.config.trainer.n_rollout_batch
             objective.experience(buf)
-            for t, r in zip(task, total_reward):
+            for it, r in zip(inst, total_reward):
                 assert r <= 1
-                counts[t.hint] += 1
-                rewards[t.hint] += r
+                counts[it.task] += 1
+                rewards[it.task] += r
 
             if not objective.ready():
                 continue
@@ -51,8 +66,10 @@ class CurriculumTrainer(object):
 
             n_update = self.config.trainer.n_update
             if i_iter % n_update == 0:
-                logging.info("[err] %d %s", i_iter, err / n_update)
-                logging.info("[rewards %d %d]", i_rollout, self.config.objective.n_train_batch * i_iter)
+                logging.info("[iter] %d", i_iter)
+                logging.info("[rollout] %d", i_rollout)
+                logging.info("[step] %d", self.config.objective.n_train_batch * i_iter)
+                logging.info("[err] %s", err / n_update)
                 min_score = 1
                 for hint in sorted(counts.keys()):
                     score = rewards[hint] / counts[hint]
@@ -62,10 +79,11 @@ class CurriculumTrainer(object):
                 #logging.info("\n"+"\n".join([str(e) for e in examples]))
                 for i_ex, ex in enumerate(examples):
                     logging.info("[rollout %d] %s" % (i_ex, ex))
+                logging.info("")
                 if min_score > 0.8:
                     max_len += 1
-                counts = defaultdict(lambda: 0.)
-                rewards = defaultdict(lambda: 0.)
+                #counts = defaultdict(lambda: 0.)
+                #rewards = defaultdict(lambda: 0.)
                 err = 0
 
     def do_rollout(self, world, task, model, n_batch):

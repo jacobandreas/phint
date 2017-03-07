@@ -116,11 +116,11 @@ class SketchController(object):
         self.t_attention = tf.placeholder(tf.float32, shape=(None, guide.n_modules))
         self.t_task = tf.placeholder(tf.int32, shape=(None,))
 
-    def init(self, task, obs):
+    def init(self, inst, obs):
         return [ControllerState(
-                    self.task_index.index(t.mission), self.guide.guide_for(t),
+                    self.task_index.index(it.task), self.guide.guide_for(it.task),
                     None, 0)
-                for t in task]
+                for it in inst]
 
     def feed(self, state):
         attention = np.zeros((len(state), self.guide.n_modules))

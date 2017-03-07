@@ -21,7 +21,7 @@ RIGHT = 3
 USE = 4
 N_ACTIONS = USE + 1
 
-MinicraftMission = namedtuple("MinicraftMission", ["goal", "hint"])
+MinicraftTask = namedtuple("MinicraftTask", ["goal", "hint"])
 
 def random_free(grid, random):
     pos = None
@@ -45,31 +45,33 @@ def neighbors(pos, dir=None):
         neighbors.append((x, y+1))
     return neighbors
 
-class MinicraftTask(object):
-    def __init__(self, mission, init_state):
-        self.mission = mission
+class MinicraftInstance(object):
+    def __init__(self, task, init_state):
+        self.task = task
         self.state = init_state
-        self.hint = mission.hint
+        #self.hint = mission.hint
 
     def __hash__(self):
-        return hash((self.mission, self.state))
+        return hash((self.task, self.state))
 
     def __eq__(self, other):
-        if not isinstance(other, MinicraftTask):
+        if not isinstance(other, MinicraftInstance):
             return False
-        return self.mission == other.mission and self.state == other.state
+        return self.task == other.task and self.state == other.state
 
 class MinicraftWorld(object):
     def __init__(self, config):
         self.config = config
         self.cookbook = cookbook.Cookbook("worlds/minicraft/recipes.yaml")
-        self.hints = {}
+        self.tasks = []
         with open("worlds/minicraft/hints.yaml") as hint_f:
             hints = yaml.load(hint_f)
             for goal in hints:
                 _, arg = util.parse_fexp(goal)
                 assert arg in self.cookbook.index
-                self.hints[arg] = tuple(hints[goal])
+                hint = tuple(hints[goal])
+                task = MinicraftTask(arg, hint)
+                self.tasks.append(task)
 
         self.n_obs = \
                 2 * WINDOW_WIDTH * WINDOW_HEIGHT * self.cookbook.n_kinds + \
@@ -77,7 +79,7 @@ class MinicraftWorld(object):
                 4 + \
                 1
         self.n_act = N_ACTIONS
-        self.n_tasks = len(self.hints)
+        self.n_tasks = len(self.tasks)
 
         self.non_grabbable_indices = self.cookbook.environment
         self.grabbable_indices = [i for i in range(self.cookbook.n_kinds)
@@ -87,24 +89,23 @@ class MinicraftWorld(object):
         self.water_index = self.cookbook.index["water"]
         self.stone_index = self.cookbook.index["stone"]
 
-        self.random = np.random.RandomState(0)
+        self.random = util.next_random()
 
-    def sample_task(self, max_len=10):
-        available_goals = [g for g, h in self.hints.items() if len(h) <= max_len]
-        goal = self.random.choice(available_goals)
-        hint = self.hints[goal]
-        mission = MinicraftMission(goal, hint)
-        init_state = self.sample_state_with_goal(mission.goal)
-        return MinicraftTask(mission, init_state)
+    def sample_instance(self, p=None):
+        assert p is None or len(p) == len(self.tasks)
+        i_task = self.random.choice(len(self.tasks), p=p)
+        task = self.tasks[i_task]
+        init_state = self.sample_state_with_goal(task.goal)
+        return MinicraftInstance(task, init_state)
 
     def reset(self, tasks):
         return [t.state.features() for t in tasks]
 
-    def step(self, actions, tasks):
+    def step(self, actions, insts):
         features = []
         rewards = []
         stops = []
-        for a, t in zip(actions, tasks):
+        for a, t in zip(actions, insts):
             reward, nstate = t.state.step(a)
             t.state = nstate
             stop = False
@@ -113,10 +114,10 @@ class MinicraftWorld(object):
             stops.append(stop)
         return features, rewards, stops
 
-    def complete(self, tasks):
+    def complete(self, insts):
         rewards = []
-        for t in tasks:
-            if t.state.inventory[self.cookbook.index[t.mission.goal]] > 0:
+        for t in insts:
+            if t.state.inventory[self.cookbook.index[t.task.goal]] > 0:
                 rewards.append(1.)
             else:
                 rewards.append(0.)
@@ -124,6 +125,7 @@ class MinicraftWorld(object):
 
     def sample_state_with_goal(self, goal):
         goal = self.cookbook.index[goal]
+        #goal = self.cookbook.index[util.parse_fexp(goal)[1]]
         assert goal not in self.cookbook.environment
         if goal in self.cookbook.primitives:
             make_island = goal == self.cookbook.index["gold"]
