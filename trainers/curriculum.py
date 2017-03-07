@@ -45,6 +45,9 @@ class CurriculumTrainer(object):
             i_iter += 1
 
             examples = [[t.a for t in b] for b in buf[:3]]
+            examples = [" ".join(
+                    [str(a) if r == 0 else str(a) + " _" for a, r in e]) 
+                for e in examples]
 
             n_update = self.config.trainer.n_update
             if i_iter % n_update == 0:
@@ -56,7 +59,9 @@ class CurriculumTrainer(object):
                     logging.info("[reward %s] %f (%d)", util.pp_sexp(hint), 
                             score, counts[hint])
                     min_score = min(score, min_score)
-                logging.info("\n"+"\n".join([str(e) for e in examples]))
+                #logging.info("\n"+"\n".join([str(e) for e in examples]))
+                for i_ex, ex in enumerate(examples):
+                    logging.info("[rollout %d] %s" % (i_ex, ex))
                 if min_score > 0.8:
                     max_len += 1
                 counts = defaultdict(lambda: 0.)
