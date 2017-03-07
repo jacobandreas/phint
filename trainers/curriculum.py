@@ -33,16 +33,11 @@ class CurriculumTrainer(object):
         counts = defaultdict(lambda: 1.) # ick
         rewards = defaultdict(lambda: 0.)
         err = 0
-        max_len = 1
+        max_len = min(len(task.hint) for task in world.tasks)
+        task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
+        assert task_probs is not None
 
         while True:
-            task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
-            if task_probs is None:
-                max_len += 1
-                continue
-            counts = defaultdict(lambda: 1.) # ick
-            rewards = defaultdict(lambda: 0.)
-
             inst = [world.sample_instance(task_probs) for _ in range(n_batch)]
             buf, total_reward = self.do_rollout(world, inst, model, n_batch)
             i_rollout += self.config.trainer.n_rollout_batch
@@ -79,6 +74,8 @@ class CurriculumTrainer(object):
                 logging.info("")
                 if min_score > 0.8:
                     max_len += 1
+                counts = defaultdict(lambda: 1.) # ick
+                rewards = defaultdict(lambda: 0.)
                 err = 0
 
     def do_rollout(self, world, task, model, n_batch):
