@@ -15,13 +15,9 @@ class CurriculumTrainer(object):
 
     def _recompute_task_probs(self, world, counts, rewards, max_len):
         probs = np.zeros(world.n_tasks)
-        #print
-        #print counts
-        #print rewards
         for i, task in enumerate(world.tasks):
             if len(task.hint) > max_len:
                 continue
-            #print task, task.hint
             probs[i] = 1 - rewards[task] / counts[task]
         if not probs.any():
             return None
@@ -44,6 +40,8 @@ class CurriculumTrainer(object):
             if task_probs is None:
                 max_len += 1
                 continue
+            counts = defaultdict(lambda: 1.) # ick
+            rewards = defaultdict(lambda: 0.)
 
             inst = [world.sample_instance(task_probs) for _ in range(n_batch)]
             buf, total_reward = self.do_rollout(world, inst, model, n_batch)
@@ -76,14 +74,11 @@ class CurriculumTrainer(object):
                     logging.info("[reward %s] %f (%d)", util.pp_sexp(hint), 
                             score, counts[hint])
                     min_score = min(score, min_score)
-                #logging.info("\n"+"\n".join([str(e) for e in examples]))
                 for i_ex, ex in enumerate(examples):
                     logging.info("[rollout %d] %s" % (i_ex, ex))
                 logging.info("")
                 if min_score > 0.8:
                     max_len += 1
-                #counts = defaultdict(lambda: 0.)
-                #rewards = defaultdict(lambda: 0.)
                 err = 0
 
     def do_rollout(self, world, task, model, n_batch):
