@@ -71,10 +71,12 @@ class CurriculumTrainer(object):
                     min_score = min(score, min_score)
                 for i_ex, ex in enumerate(examples):
                     logging.info("[rollout %d] %s" % (i_ex, ex))
-                logging.info("")
                 if min_score > 0.8:
                     max_len += 1
-                counts = defaultdict(lambda: 1.) # ick
+                task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
+                logging.info("[probs] %s", task_probs)
+                logging.info("")
+                counts = defaultdict(lambda: 0.)
                 rewards = defaultdict(lambda: 0.)
                 err = 0
 
