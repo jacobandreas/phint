@@ -118,3 +118,6 @@ def batch_gather(params, indices):
     ids = tf.range(tf.shape(indices)[0])
     full = tf.stack((ids, indices), axis=1)
     return tf.gather_nd(params, full)
+
+def vars_in_scope(scope):
+    return tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=scope.name)

@@ -7,6 +7,7 @@ import numpy as np
 import tensorflow as tf
 
 INIT_SCALE = 1.43
+TINY = 1e-8
 
 ActorState = namedtuple("ActorState", ["step"])
 ControllerState = namedtuple("ControllerState", ["task", "hint", "obs", "index"])
@@ -28,14 +29,23 @@ class DiscreteDist(object):
         t_chosen = util.batch_gather(t_log_prob, t_action)
         return t_chosen
 
+    def likelihood_ratio_of(self, t_param, t_temp, t_param_old, t_temp_old, t_action):
+        t_score = t_param
+        t_score_old = t_param_old
+        t_prob = tf.nn.softmax(t_score)
+        t_prob_old = tf.nn.softmax(t_score_old)
+        t_chosen = util.batch_gather(t_prob, t_action)
+        t_chosen_old = util.batch_gather(t_prob_old, t_action)
+        return (t_chosen + TINY) / (t_chosen_old + TINY)
+
     def entropy(self, t_param, t_temp):
         t_prob = tf.nn.softmax(t_param)
-        t_logprob = tf.log(t_prob)
+        t_logprob = tf.log(t_prob + TINY)
         return tf.reduce_sum(t_prob * t_logprob, axis=1)
 
 class DiscreteActors(object):
     def __init__(self, config, t_obs, world, guide):
-        with tf.variable_scope("actors"):
+        with tf.variable_scope("actors") as scope:
             prev_width = world.n_obs
             prev_layer = t_obs
             widths = config.model.actor.n_hidden + [world.n_act + 2]
@@ -64,6 +74,8 @@ class DiscreteActors(object):
                     layer = act(layer)
                 prev_layer = layer
                 prev_width = width
+
+                self.params = util.vars_in_scope(scope)
 
         self.t_action_param = tf.slice(
                 prev_layer,
@@ -97,7 +109,7 @@ class EmbeddedActors(object):
 
 class LinearCritic(object):
     def __init__(self, config, t_obs, world, guide):
-        with tf.variable_scope("critic"):
+        with tf.variable_scope("critic") as scope:
             v_w = tf.get_variable(
                     "w",
                     shape=(world.n_obs, world.n_tasks+1),
@@ -108,6 +120,8 @@ class LinearCritic(object):
                     shape=(world.n_tasks+1),
                     initializer=tf.constant_initializer(0))
             self.t_value = tf.einsum("ij,jk->ik", t_obs, v_w) + v_b
+
+            self.params = util.vars_in_scope(scope)
 
 class SketchController(object):
     def __init__(self, config, t_obs, world, guide):
@@ -162,6 +176,8 @@ class ModularModel(object):
 
         if config.model.actor.type == "discrete":
             self.actors = DiscreteActors(config, self.t_obs, world, guide)
+            with tf.variable_scope("old"):
+                self.actors_old = DiscreteActors(config, self.t_obs, world, guide)
         else:
             assert False
 
@@ -185,7 +201,24 @@ class ModularModel(object):
                 self.actors.t_action_temp * t_att, axis=1)
         self.t_ret_temp = tf.reduce_sum(
                 self.actors.t_ret_temp * t_att, axis=1)
+
+        # TODO cleanup?
+        self.t_action_param_old = tf.reduce_sum(
+                self.actors_old.t_action_param * t_att_bc, axis=2)
+        self.t_ret_param_old = tf.reduce_sum(
+                self.actors_old.t_ret_param * t_att_bc, axis=2)
+        self.t_action_temp_old = tf.reduce_sum(
+                self.actors_old.t_action_temp * t_att, axis=1)
+        self.t_ret_temp_old = tf.reduce_sum(
+                self.actors_old.t_ret_temp * t_att, axis=1)
+
         self.t_baseline = util.batch_gather(self.critic.t_value, self.controller.t_task)
+
+        self.oo_update_old = [op.assign(p) for p, op 
+                in zip(self.actors.params, self.actors_old.params)]
+
+        self.actor_params = self.actors.params
+        self.critic_params = self.critic.params
 
     def init(self, task, obs):
         actor_state = self.actors.init(task, obs)

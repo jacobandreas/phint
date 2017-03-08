@@ -3,6 +3,7 @@ import guides
 import worlds
 import models
 from objectives.reinforce import Reinforce
+from objectives.ppo import Ppo
 import trainers
 
 import logging
@@ -18,9 +19,9 @@ def main():
     world = worlds.load(config)
     guide = guides.load(config)
     model = models.load(config, world, guide)
-    objectives = Reinforce(config, model)
+    objective = Ppo(config, model)
     trainer = trainers.load(config)
-    trainer.train(world, model, objectives)
+    trainer.train(world, model, objective)
 
 def configure():
     # load config
