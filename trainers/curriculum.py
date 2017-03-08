@@ -19,8 +19,8 @@ class CurriculumTrainer(object):
         for i, task in enumerate(world.tasks):
             if len(task.hint) > max_len:
                 continue
-            probs[i] = 1 - rewards[task] / counts[task]
-            #probs[i] = (0.05 + max_reward) / (0.05 + rewards[task] / (1 + counts[task]))
+            #probs[i] = 1 - rewards[task] / counts[task]
+            probs[i] = (0.05 + max_reward) / (0.05 + rewards[task] / (1 + counts[task]))
         if not probs.any():
             return None
         probs /= np.sum(probs)
@@ -78,7 +78,7 @@ class CurriculumTrainer(object):
                 task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
                 logging.info("[probs] %s", task_probs)
                 logging.info("")
-                counts = defaultdict(lambda: 0.)
+                counts = defaultdict(lambda: 1.)
                 rewards = defaultdict(lambda: 0.)
                 err = 0
 

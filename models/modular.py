@@ -77,6 +77,8 @@ class DiscreteActors(object):
 
                 self.params = util.vars_in_scope(scope)
 
+        self.final_bias = v_b
+
         self.t_action_param = tf.slice(
                 prev_layer,
                 (0, 0, 0),

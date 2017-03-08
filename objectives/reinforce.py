@@ -54,5 +54,7 @@ class Reinforce(object):
                     self.o_train_actor, self.o_train_critic, self.model.t_baseline],
                 feed)
 
+        #print session.run([self.model.actors.final_bias])
+
         self.buffer = []
         return np.asarray([actor_err, critic_err])
