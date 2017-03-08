@@ -27,8 +27,8 @@ class Ppo(object):
 
         t_ppo = tf.minimum(t_lr * t_advantage, t_lr_clip * t_advantage)
 
-        self.t_actor_loss = -tf.reduce_mean(
-                t_ppo
+        self.t_actor_loss = tf.reduce_mean(
+                - t_ppo
                 + config.objective.action_hcost 
                     * model.action_dist.entropy(model.t_action_param, model.t_action_temp)
                 + config.objective.ret_hcost 
