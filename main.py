@@ -19,8 +19,8 @@ def main():
     world = worlds.load(config)
     guide = guides.load(config)
     model = models.load(config, world, guide)
-    objective = Ppo(config, model)
-    #objective = Reinforce(config, model)
+    #objective = Ppo(config, model)
+    objective = Reinforce(config, model)
     trainer = trainers.load(config)
     trainer.train(world, model, objective)
 
