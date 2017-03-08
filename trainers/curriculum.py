@@ -15,10 +15,12 @@ class CurriculumTrainer(object):
 
     def _recompute_task_probs(self, world, counts, rewards, max_len):
         probs = np.zeros(world.n_tasks)
+        max_reward = max(rewards[t] / (1 + counts[t] for t in world.task))
         for i, task in enumerate(world.tasks):
             if len(task.hint) > max_len:
                 continue
-            probs[i] = 1 - rewards[task] / counts[task]
+            #probs[i] = 1 - rewards[task] / counts[task]
+            probs[i] = (1 + max_reward) / (1 + rewards[task] / (1 + counts[task]))
         if not probs.any():
             return None
         probs /= np.sum(probs)
