@@ -20,7 +20,7 @@ model:
 objective:
   discount: 0.9
   action_hcost: 0.001
-  ret_hcost: 0.
+  ret_hcost: 0.0001
   step_size: 0.001
   n_train_batch: 2000
 
