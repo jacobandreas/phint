@@ -39,6 +39,7 @@ class CurriculumTrainer(object):
         task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
         assert task_probs is not None
 
+        model.save(self.session)
         while True:
             inst = [world.sample_instance(task_probs) for _ in range(n_batch)]
             buf, total_reward = self.do_rollout(world, inst, model, n_batch)
@@ -75,6 +76,7 @@ class CurriculumTrainer(object):
                     logging.info("[rollout %d] %s" % (i_ex, ex))
                 if min_score > 0.8:
                     max_len += 1
+                    model.save(self.session)
                 task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
                 logging.info("[probs] %s", task_probs)
                 logging.info("")

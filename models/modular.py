@@ -5,6 +5,7 @@ from collections import defaultdict, namedtuple
 import logging
 import numpy as np
 import tensorflow as tf
+import os
 
 INIT_SCALE = 1.43
 TINY = 1e-8
@@ -172,6 +173,7 @@ class ModularModel(object):
         self.action_dist = DiscreteDist()
 
         self.prepare(config, world, guide)
+        self.saver = tf.train.Saver()
 
     def prepare(self, config, world, guide):
         self.t_obs = tf.placeholder(tf.float32, (None, world.n_obs))
@@ -261,3 +263,8 @@ class ModularModel(object):
         mstate_ = zip(actor_state_, controller_state_)
 
         return zip(action, ret), stop, mstate_
+
+    def save(self, session):
+        self.saver.save(
+                session,
+                os.path.join(self.config.experiment_dir, "modular.chk"))
