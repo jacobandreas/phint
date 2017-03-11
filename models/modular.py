@@ -42,7 +42,7 @@ class DiscreteDist(object):
     def entropy(self, t_param, t_temp):
         t_prob = tf.nn.softmax(t_param)
         t_logprob = tf.log(t_prob + TINY)
-        return tf.reduce_sum(t_prob * t_logprob, axis=1)
+        return -tf.reduce_sum(t_prob * t_logprob, axis=1)
 
 class DiscreteActors(object):
     def __init__(self, config, t_obs, world, guide):

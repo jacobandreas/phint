@@ -11,7 +11,7 @@ model:
   actor:
     type: discrete
     n_hidden: [128]
-    ret_bias: -3
+    ret_bias: -4.5
   controller:
     type: sketch
   critic:
@@ -19,8 +19,8 @@ model:
 
 objective:
   discount: 0.9
-  action_hcost: 0.001
-  ret_hcost: 0.0001
+  action_h_bonus: 0.001
+  ret_h_bonus: 0.0001
   step_size: 0.001
   n_train_batch: 2000
 

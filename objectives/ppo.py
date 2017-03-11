@@ -27,11 +27,11 @@ class Ppo(object):
 
         t_ppo = tf.minimum(t_lr * t_advantage, t_lr_clip * t_advantage)
 
-        self.t_actor_loss = tf.reduce_mean(
-                - t_ppo
-                + config.objective.action_hcost 
+        self.t_actor_loss = -tf.reduce_mean(
+                t_ppo
+                + config.objective.action_h_bonus 
                     * model.action_dist.entropy(model.t_action_param, model.t_action_temp)
-                + config.objective.ret_hcost 
+                + config.objective.ret_h_bonus
                     * model.action_dist.entropy(model.t_ret_param, model.t_ret_temp))
 
         self.t_critic_loss = tf.reduce_mean(
@@ -55,21 +55,22 @@ class Ppo(object):
         return len(self.buffer) >= self.config.objective.n_train_batch
 
     def train(self, session):
-        self.buffer = self.buffer[:self.config.objective.n_train_batch]
-        s1, m1, a, s2, m2, r = zip(*self.buffer)
-        act, ret = zip(*a)
-        feed = {
-            self.t_action: act,
-            self.t_ret: ret,
-            self.t_reward: r,
-        }
-        feed.update(self.model.feed(s1, m1))
+        for _ in range(2):
+            self.buffer = self.buffer[:self.config.objective.n_train_batch]
+            s1, m1, a, s2, m2, r = zip(*self.buffer)
+            act, ret = zip(*a)
+            feed = {
+                self.t_action: act,
+                self.t_ret: ret,
+                self.t_reward: r,
+            }
+            feed.update(self.model.feed(s1, m1))
 
-        actor_err, critic_err, _, _, b = session.run(
-                [self.t_actor_loss, self.t_critic_loss, 
-                    self.o_train_actor, self.o_train_critic, self.model.t_baseline],
-                feed)
-        session.run(self.model.oo_update_old)
+            actor_err, critic_err, _, _, b = session.run(
+                    [self.t_actor_loss, self.t_critic_loss, 
+                        self.o_train_actor, self.o_train_critic, self.model.t_baseline],
+                    feed)
+            session.run(self.model.oo_update_old)
 
         self.buffer = []
         return np.asarray([actor_err, critic_err])
