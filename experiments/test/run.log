@@ -1,0 +1,46 @@
+2017-03-11 06:35:33,455 INFO     BEGIN
+2017-03-11 06:35:33,455 INFO     struct {
+    trainer:
+        parallel: 4
+        n_update: 100
+        max_rollout_len: 100
+        n_rollout_batch: 100
+        name: 'CurriculumTrainer'
+    name: 'test'
+    objective:
+        n_train_batch: 2000
+        discount: 0.9
+        step_size: 0.0003
+        action_h_bonus: 0.001
+        ret_h_bonus: 0.0001
+    world:
+        name: 'MinicraftWorld'
+    model:
+        critic:
+            type: 'linear'
+        controller:
+            type: 'sketch'
+        actor:
+            type: 'discrete'
+            n_hidden: [128]
+            ret_bias: -4.5
+        name: 'ModularModel'
+    guide:
+        name: 'SketchGuide'
+    experiment_dir: 'experiments/test'
+}
+2017-03-11 06:35:34,820 ERROR    Uncaught exception: Struct instance has no attribute 'action_hcost'
+None
+2017-03-11 06:35:34,820 ERROR    Traceback (most recent call last):
+
+  File "main.py", line 54, in <module>
+    main()
+
+  File "main.py", line 23, in main
+    objective = Reinforce(config, model)
+
+  File "/home/ubuntu/phint/objectives/reinforce.py", line 20, in __init__
+    + config.objective.ret_hcost * model.action_dist.entropy(model.t_ret_param, model.t_ret_temp))
+
+AttributeError: Struct instance has no attribute 'action_hcost'
+None
