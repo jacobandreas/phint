@@ -55,7 +55,7 @@ class Ppo(object):
         return len(self.buffer) >= self.config.objective.n_train_batch
 
     def train(self, session):
-        for _ in range(2):
+        for _ in range(5):
             self.buffer = self.buffer[:self.config.objective.n_train_batch]
             s1, m1, a, s2, m2, r = zip(*self.buffer)
             act, ret = zip(*a)
