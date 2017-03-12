@@ -49,7 +49,8 @@ class DiscreteActors(object):
         with tf.variable_scope("actors") as scope:
             prev_width = world.n_obs
             prev_layer = t_obs
-            widths = config.model.actor.n_hidden + [world.n_act + 2]
+            ###widths = config.model.actor.n_hidden + [world.n_act + 2]
+            widths = config.model.actor.n_hidden + [world.n_act + 1]
             activations = [tf.nn.tanh] * (len(widths) - 1) + [None]
             for i_layer, (width, act) in enumerate(zip(widths, activations)):
                 v_w = tf.get_variable(
@@ -80,14 +81,16 @@ class DiscreteActors(object):
 
         self.final_bias = v_b
 
-        self.t_action_param = tf.slice(
-                prev_layer,
-                (0, 0, 0),
-                (-1, world.n_act, -1))
-        self.t_ret_param = tf.slice(
-                prev_layer,
-                (0, world.n_act, 0),
-                (-1, -1, -1))
+        ### self.t_action_param = tf.slice(
+        ###         prev_layer,
+        ###         (0, 0, 0),
+        ###         (-1, world.n_act, -1))
+        ### self.t_ret_param = tf.slice(
+        ###         prev_layer,
+        ###         (0, world.n_act, 0),
+        ###         (-1, -1, -1))
+        self.t_action_param = prev_layer
+        self.t_ret_param = prev_layer[:, -1:, :] 
 
         self.t_action_temp = tf.get_variable(
                 "action_temp",
@@ -246,8 +249,11 @@ class ModularModel(object):
             [self.t_action_param, self.t_ret_param, self.t_action_temp, self.t_ret_temp],
             self.feed(obs, mstate))
 
+        #action = self.action_dist.sample(action_p, action_t)
+        #ret = self.action_dist.sample(ret_p, ret_t)
+        #any_ret = list(ret)
         action = self.action_dist.sample(action_p, action_t)
-        ret = self.action_dist.sample(ret_p, ret_t)
+        ret = [a == self.world.n_act for a in action]
         any_ret = list(ret)
 
         actor_state_ = self.actors.step(actor_state, action, ret)

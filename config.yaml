@@ -11,7 +11,8 @@ model:
   actor:
     type: discrete
     n_hidden: [128]
-    ret_bias: -4.5
+    #ret_bias: -4.5
+    ret_bias: -3
   controller:
     type: sketch
   critic:
