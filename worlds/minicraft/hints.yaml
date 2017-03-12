@@ -1,8 +1,8 @@
-"make[wood]":
-  ["get_wood"]
-
-"make[iron]":
-  ["get_iron"]
+#"make[wood]":
+#  ["get_wood"]
+#
+#"make[iron]":
+#  ["get_iron"]
 #
 #"make[grass]":
 #  ["get_grass"]
