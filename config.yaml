@@ -21,8 +21,7 @@ objective:
   discount: 0.9
   action_h_bonus: 0.001
   ret_h_bonus: 0.0001
-  #step_size: 0.001
-  step_size: 0.0003
+  step_size: 0.001
   n_train_batch: 2000
 
 trainer: 
