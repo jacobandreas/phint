@@ -77,6 +77,8 @@ class CurriculumTrainer(object):
                 if min_score > 0.8:
                     max_len += 1
                     model.save(self.session)
+                    counts = defaultdict(lambda: 1.)
+                    rewards = defaultdict(lambda: 0.)
                 task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
                 logging.info("[probs] %s", task_probs)
                 logging.info("")
