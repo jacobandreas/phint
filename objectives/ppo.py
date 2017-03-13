@@ -12,15 +12,10 @@ class Ppo(object):
         self.t_ret = tf.placeholder(tf.int32, (None,))
         self.t_reward = tf.placeholder(tf.float32, (None,))
 
-        t_lr_action = model.action_dist.likelihood_ratio_of(
+        t_lr = model.action_dist.likelihood_ratio_of(
                 model.t_action_param, model.t_action_temp,
                 model.t_action_param_old, model.t_action_temp_old,
-                self.t_action)
-        t_lr_ret = model.action_dist.likelihood_ratio_of(
-                model.t_ret_param, model.t_ret_temp,
-                model.t_ret_param_old, model.t_ret_temp_old,
-                self.t_ret)
-        t_lr = t_lr_action * t_lr_ret
+                self.t_action, self.t_ret)
         t_lr_clip = tf.clip_by_value(t_lr, 1-EPS, 1+EPS)
 
         t_advantage = (self.t_reward - model.t_baseline)
@@ -29,10 +24,8 @@ class Ppo(object):
 
         self.t_actor_loss = -tf.reduce_mean(
                 t_ppo
-                + config.objective.action_h_bonus 
-                    * model.action_dist.entropy(model.t_action_param, model.t_action_temp)
-                + config.objective.ret_h_bonus
-                    * model.action_dist.entropy(model.t_ret_param, model.t_ret_temp))
+                + config.objective.entropy_bonus
+                    * model.action_dist.entropy(model.t_action_param, model.t_action_temp))
 
         self.t_critic_loss = tf.reduce_mean(
                 tf.square(self.t_reward - model.t_baseline))
