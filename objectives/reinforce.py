@@ -9,16 +9,12 @@ class Reinforce(object):
         self.t_action = tf.placeholder(tf.int32, (None,))
         self.t_ret = tf.placeholder(tf.int32, (None,))
         self.t_reward = tf.placeholder(tf.float32, (None,))
-        t_actor_log_action_prob = model.action_dist.log_prob_of(
-                model.t_action_param, model.t_action_temp, self.t_action)
-        ### t_actor_log_ret_prob = model.action_dist.log_prob_of(
-        ###         model.t_ret_param, model.t_ret_temp, self.t_ret)
-        ### t_actor_log_prob = t_actor_log_action_prob + t_actor_log_ret_prob
-        t_actor_log_prob = t_actor_log_action_prob
+        t_actor_log_prob = model.action_dist.log_prob_of(
+                model.t_action_param, model.t_action_temp, self.t_action, self.t_ret)
         self.t_actor_loss = -tf.reduce_mean(
                 t_actor_log_prob * (self.t_reward - tf.stop_gradient(model.t_baseline))
-                + config.objective.action_h_bonus * model.action_dist.entropy(model.t_action_param, model.t_action_temp)
-                + config.objective.ret_h_bonus * model.action_dist.entropy(model.t_ret_param, model.t_ret_temp))
+                + config.objective.entropy_bonus *
+                    model.action_dist.entropy(model.t_action_param, model.t_action_temp))
         self.t_critic_loss = tf.reduce_mean(
                 tf.square(self.t_reward - model.t_baseline))
 
@@ -50,12 +46,10 @@ class Reinforce(object):
         }
         feed.update(self.model.feed(s1, m1))
 
-        actor_err, critic_err, _, _, b = session.run(
-                [self.t_actor_loss, self.t_critic_loss, 
-                    self.o_train_actor, self.o_train_critic, self.model.t_baseline],
+        actor_err, critic_err, _, _ = session.run(
+                [self.t_actor_loss, self.t_critic_loss, self.o_train_actor, 
+                    self.o_train_critic],
                 feed)
-
-        #print session.run([self.model.actors.final_bias])
 
         self.buffer = []
         return np.asarray([actor_err, critic_err])

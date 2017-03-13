@@ -21,16 +21,19 @@ class DiscreteDist(object):
         prob = np.exp(param)
         #prob = np.exp(param / np.exp(temp[:, np.newaxis]))
         prob /= prob.sum(axis=1, keepdims=True)
-        return [self.random.choice(len(row), p=row) for row in prob]
+        actions = [self.random.choice(len(row), p=row) for row in prob]
+        n_actions = prob.shape[1]
+        rets = [action == n_actions - 1 for action in actions]
+        return actions, rets
 
-    def log_prob_of(self, t_param, t_temp, t_action):
+    def log_prob_of(self, t_param, t_temp, t_action, t_ret):
         #t_score = t_param / tf.exp(tf.expand_dims(t_temp, axis=1))
         t_score = t_param
         t_log_prob = tf.nn.log_softmax(t_score)
         t_chosen = util.batch_gather(t_log_prob, t_action)
         return t_chosen
 
-    def likelihood_ratio_of(self, t_param, t_temp, t_param_old, t_temp_old, t_action):
+    def likelihood_ratio_of(self, t_param, t_temp, t_param_old, t_temp_old, t_action, t_ret):
         t_score = t_param
         t_score_old = t_param_old
         t_prob = tf.nn.softmax(t_score)
@@ -49,7 +52,6 @@ class DiscreteActors(object):
         with tf.variable_scope("actors") as scope:
             prev_width = world.n_obs
             prev_layer = t_obs
-            ###widths = config.model.actor.n_hidden + [world.n_act + 2]
             widths = config.model.actor.n_hidden + [world.n_act + 1]
             activations = [tf.nn.tanh] * (len(widths) - 1) + [None]
             for i_layer, (width, act) in enumerate(zip(widths, activations)):
@@ -81,23 +83,10 @@ class DiscreteActors(object):
 
         self.final_bias = v_b
 
-        ### self.t_action_param = tf.slice(
-        ###         prev_layer,
-        ###         (0, 0, 0),
-        ###         (-1, world.n_act, -1))
-        ### self.t_ret_param = tf.slice(
-        ###         prev_layer,
-        ###         (0, world.n_act, 0),
-        ###         (-1, -1, -1))
         self.t_action_param = prev_layer
-        self.t_ret_param = prev_layer[:, -1:, :] 
 
         self.t_action_temp = tf.get_variable(
                 "action_temp",
-                shape=(guide.n_modules,),
-                initializer=tf.constant_initializer(0))
-        self.t_ret_temp = tf.get_variable(
-                "ret_temp",
                 shape=(guide.n_modules,),
                 initializer=tf.constant_initializer(0))
 
@@ -202,22 +191,14 @@ class ModularModel(object):
         t_att_bc = tf.expand_dims(t_att, axis=1)
         self.t_action_param = tf.reduce_sum(
                 self.actors.t_action_param * t_att_bc, axis=2)
-        self.t_ret_param = tf.reduce_sum(
-                self.actors.t_ret_param * t_att_bc, axis=2)
         self.t_action_temp = tf.reduce_sum(
                 self.actors.t_action_temp * t_att, axis=1)
-        self.t_ret_temp = tf.reduce_sum(
-                self.actors.t_ret_temp * t_att, axis=1)
 
         # TODO cleanup?
         self.t_action_param_old = tf.reduce_sum(
                 self.actors_old.t_action_param * t_att_bc, axis=2)
-        self.t_ret_param_old = tf.reduce_sum(
-                self.actors_old.t_ret_param * t_att_bc, axis=2)
         self.t_action_temp_old = tf.reduce_sum(
                 self.actors_old.t_action_temp * t_att, axis=1)
-        self.t_ret_temp_old = tf.reduce_sum(
-                self.actors_old.t_ret_temp * t_att, axis=1)
 
         self.t_baseline = util.batch_gather(self.critic.t_value, self.controller.t_task)
 
@@ -245,15 +226,11 @@ class ModularModel(object):
 
     def act(self, obs, mstate, task, session):
         actor_state, controller_state = zip(*mstate)
-        action_p, ret_p, action_t, ret_t = session.run(
-            [self.t_action_param, self.t_ret_param, self.t_action_temp, self.t_ret_temp],
+        action_p, action_t = session.run(
+            [self.t_action_param, self.t_action_temp],
             self.feed(obs, mstate))
 
-        #action = self.action_dist.sample(action_p, action_t)
-        #ret = self.action_dist.sample(ret_p, ret_t)
-        #any_ret = list(ret)
-        action = self.action_dist.sample(action_p, action_t)
-        ret = [a == self.world.n_act for a in action]
+        action, ret = self.action_dist.sample(action_p, action_t)
         any_ret = list(ret)
 
         actor_state_ = self.actors.step(actor_state, action, ret)
