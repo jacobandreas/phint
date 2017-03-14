@@ -10,11 +10,11 @@ class Reinforce(object):
         self.t_ret = tf.placeholder(tf.int32, (None,))
         self.t_reward = tf.placeholder(tf.float32, (None,))
         t_actor_log_prob = model.action_dist.log_prob_of(
-                model.t_action_param, model.t_action_temp, self.t_action, self.t_ret)
+                model.t_action_param, model.t_action_bias, model.t_action_temp, self.t_action, self.t_ret)
         self.t_actor_loss = -tf.reduce_mean(
                 t_actor_log_prob * (self.t_reward - tf.stop_gradient(model.t_baseline))
                 + config.objective.entropy_bonus *
-                    model.action_dist.entropy(model.t_action_param, model.t_action_temp))
+                    model.action_dist.entropy(model.t_action_param, model.t_action_bias, model.t_action_temp))
         self.t_critic_loss = tf.reduce_mean(
                 tf.square(self.t_reward - model.t_baseline))
 

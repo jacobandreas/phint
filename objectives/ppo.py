@@ -13,8 +13,8 @@ class Ppo(object):
         self.t_reward = tf.placeholder(tf.float32, (None,))
 
         t_lr = model.action_dist.likelihood_ratio_of(
-                model.t_action_param, model.t_action_temp,
-                model.t_action_param_old, model.t_action_temp_old,
+                model.t_action_param, model.t_action_bias, model.t_action_temp,
+                model.t_action_param_old, model.t_action_bias_old, model.t_action_temp_old,
                 self.t_action, self.t_ret)
         t_lr_clip = tf.clip_by_value(t_lr, 1-EPS, 1+EPS)
 

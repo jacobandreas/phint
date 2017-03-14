@@ -17,33 +17,32 @@ class DiscreteDist(object):
     def __init__(self):
         self.random = util.next_random()
 
-    def sample(self, param, temp):
-        prob = np.exp(param)
-        #prob = np.exp(param / np.exp(temp[:, np.newaxis]))
+    def sample(self, param, bias, temp):
+        #prob = np.exp(param)
+        prob = np.exp(param * temp[:, np.newaxis] + bias)
         prob /= prob.sum(axis=1, keepdims=True)
         actions = [self.random.choice(len(row), p=row) for row in prob]
         n_actions = prob.shape[1]
         rets = [action == n_actions - 1 for action in actions]
         return actions, rets
 
-    def log_prob_of(self, t_param, t_temp, t_action, t_ret):
-        #t_score = t_param / tf.exp(tf.expand_dims(t_temp, axis=1))
-        t_score = t_param
+    def log_prob_of(self, t_param, t_bias, t_temp, t_action, t_ret):
+        t_score = t_param * tf.expand_dims(t_temp, axis=1) + t_bias
         t_log_prob = tf.nn.log_softmax(t_score)
         t_chosen = util.batch_gather(t_log_prob, t_action)
         return t_chosen
 
-    def likelihood_ratio_of(self, t_param, t_temp, t_param_old, t_temp_old, t_action, t_ret):
-        t_score = t_param
-        t_score_old = t_param_old
+    def likelihood_ratio_of(self, t_param, t_bias, t_temp, t_param_old, t_bias_old, t_temp_old, t_action, t_ret):
+        t_score = t_param * tf.expand_dims(t_temp, axis=1) + t_bias
+        t_score_old = t_param_old * tf.expand_dims(t_temp_old, axis=1) + t_bias_old
         t_prob = tf.nn.softmax(t_score)
         t_prob_old = tf.nn.softmax(t_score_old)
         t_chosen = util.batch_gather(t_prob, t_action)
         t_chosen_old = util.batch_gather(t_prob_old, t_action)
         return (t_chosen + TINY) / (t_chosen_old + TINY)
 
-    def entropy(self, t_param, t_temp):
-        t_prob = tf.nn.softmax(t_param)
+    def entropy(self, t_param, t_bias, t_temp):
+        t_prob = tf.nn.softmax(t_param * tf.expand_dims(t_temp, axis=1) + t_bias)
         t_logprob = tf.log(t_prob + TINY)
         return -tf.reduce_sum(t_prob * t_logprob, axis=1)
 
@@ -73,22 +72,21 @@ class DiscreteActors(object):
                     op = "ij,jkl->ikl"
                 else:
                     op = "ijl,jkl->ikl"
-                layer = tf.einsum(op, prev_layer, v_w) + v_b
+                layer = tf.einsum(op, prev_layer, v_w)
+                # TODO jda
                 if act is not None:
-                    layer = act(layer)
+                    layer = act(layer + v_b)
                 prev_layer = layer
                 prev_width = width
 
                 self.params = util.vars_in_scope(scope)
 
-        self.final_bias = v_b
-
         self.t_action_param = prev_layer
-
-        self.t_action_temp = tf.get_variable(
+        self.t_action_bias = v_b
+        self.t_action_temp = tf.exp(tf.get_variable(
                 "action_temp",
                 shape=(guide.n_modules,),
-                initializer=tf.constant_initializer(0))
+                initializer=tf.constant_initializer(0)))
 
     def init(self, task, obs):
         return [ActorState(0) for _ in task]
@@ -191,12 +189,16 @@ class ModularModel(object):
         t_att_bc = tf.expand_dims(t_att, axis=1)
         self.t_action_param = tf.reduce_sum(
                 self.actors.t_action_param * t_att_bc, axis=2)
+        self.t_action_bias = tf.reduce_sum(
+                self.actors.t_action_bias * t_att_bc, axis=2)
         self.t_action_temp = tf.reduce_sum(
                 self.actors.t_action_temp * t_att, axis=1)
 
         # TODO cleanup?
         self.t_action_param_old = tf.reduce_sum(
                 self.actors_old.t_action_param * t_att_bc, axis=2)
+        self.t_action_bias_old = tf.reduce_sum(
+                self.actors_old.t_action_bias * t_att_bc, axis=2)
         self.t_action_temp_old = tf.reduce_sum(
                 self.actors_old.t_action_temp * t_att, axis=1)
 
@@ -226,11 +228,11 @@ class ModularModel(object):
 
     def act(self, obs, mstate, task, session):
         actor_state, controller_state = zip(*mstate)
-        action_p, action_t = session.run(
-            [self.t_action_param, self.t_action_temp],
+        action_p, action_b, action_t = session.run(
+            [self.t_action_param, self.t_action_bias, self.t_action_temp],
             self.feed(obs, mstate))
 
-        action, ret = self.action_dist.sample(action_p, action_t)
+        action, ret = self.action_dist.sample(action_p, action_b, action_t)
         any_ret = list(ret)
 
         actor_state_ = self.actors.step(actor_state, action, ret)
