@@ -18,7 +18,6 @@ class DiscreteDist(object):
         self.random = util.next_random()
 
     def sample(self, param, bias, temp):
-        #prob = np.exp(param)
         prob = np.exp(param * temp[:, np.newaxis] + bias)
         prob /= prob.sum(axis=1, keepdims=True)
         actions = [self.random.choice(len(row), p=row) for row in prob]
@@ -83,10 +82,10 @@ class DiscreteActors(object):
 
         self.t_action_param = prev_layer
         self.t_action_bias = v_b
-        self.t_action_temp = tf.exp(tf.get_variable(
+        self.t_action_temp = tf.stop_gradient(tf.exp(tf.get_variable(
                 "action_temp",
                 shape=(guide.n_modules,),
-                initializer=tf.constant_initializer(0)))
+                initializer=tf.constant_initializer(0))))
 
     def init(self, task, obs):
         return [ActorState(0) for _ in task]
