@@ -1,4 +1,9 @@
-#from malmo import MalmoWorld
+import logging
+
+try:
+    from malmo import MalmoWorld
+except e:
+    logging.warn("Unable to load Malmo")
 from minicraft import MinicraftWorld
 
 def load(config):

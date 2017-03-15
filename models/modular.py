@@ -13,6 +13,26 @@ TINY = 1e-8
 ActorState = namedtuple("ActorState", ["step"])
 ControllerState = namedtuple("ControllerState", ["task", "hint", "obs", "index"])
 
+def _linear(t_in, n_out):
+    assert len(t_in.get_shape()) == 2
+    v_w = tf.get_variable(
+            "w",
+            shape=(t_in.get_shape()[1], n_out),
+            initializer=tf.uniform_unit_scaling_initializer(
+                factor=INIT_SCALE))
+    v_b = tf.get_variable(
+            "b",
+            shape=n_out,
+            initializer=tf.constant_initializer(0))
+    return tf.einsum("ij,jk->ik", t_in, v_w) + v_b
+
+def _embed(t_in, n_embeddings, n_out):
+    v = tf.get_variable(
+            "embed", shape=(n_embeddings, n_out),
+            initializer=tf.uniform_unit_scaling_initializer())
+    t_embed = tf.nn.embedding_lookup(v, t_in)
+    return t_embed
+
 class DiscreteDist(object):
     def __init__(self):
         self.random = util.next_random()
@@ -102,17 +122,7 @@ class EmbeddedActors(object):
 class LinearCritic(object):
     def __init__(self, config, t_obs, world, guide):
         with tf.variable_scope("critic") as scope:
-            v_w = tf.get_variable(
-                    "w",
-                    shape=(world.n_obs, world.n_tasks+1),
-                    initializer=tf.uniform_unit_scaling_initializer(
-                        factor=INIT_SCALE))
-            v_b = tf.get_variable(
-                    "b",
-                    shape=(world.n_tasks+1),
-                    initializer=tf.constant_initializer(0))
-            self.t_value = tf.einsum("ij,jk->ik", t_obs, v_w) + v_b
-
+            self.t_value = _linear(t_obs, world.n_tasks+1)
             self.params = util.vars_in_scope(scope)
 
 class SketchController(object):
@@ -153,6 +163,64 @@ class SketchController(object):
         return state_, stop
         # TODO max task len
 
+class AttController(object):
+    def __init__(self, config, t_obs, world, guide):
+        self.guide = guide
+        self.task_index = util.Index()
+        n_hidden = config.model.controller.n_hidden
+        n_embed = config.model.controller.n_embed
+        self.t_obs = tf.placeholder(tf.float32, shape=(None, world.n_obs))
+        self.t_hint = tf.placeholder(tf.int32, shape=(None, guide.max_len))
+        t_batch_size = tf.shape(self.t_hint)[0]
+        self.t_task = tf.placeholder(tf.int32, shape=(None,))
+        self.t_len = tf.placeholder(tf.int32, shape=(None,))
+
+        # attention to hint
+        t_embed = _embed(self.t_hint, guide.n_modules, n_embed)
+        cell = tf.contrib.rnn.GRUCell(n_hidden)
+        t_hint_states, _ = tf.nn.bidirectional_dynamic_rnn(
+                cell, cell, t_embed, self.t_len, dtype=tf.float32)
+        t_hint_repr = tf.reduce_mean(t_hint_states, axis=0)
+        t_state_repr = tf.expand_dims(tf.nn.relu(_linear(t_obs, n_hidden)), axis=1)
+        t_att_score = tf.reduce_sum(t_hint_repr * t_state_repr, axis=2)
+        t_hint_att = tf.nn.softmax(t_att_score)
+
+        # attention to modules
+        t_rows = tf.expand_dims(tf.range(t_batch_size), 1)
+        t_rows_tile = tf.tile(t_rows, (1, guide.max_len))
+        t_indices = tf.stack((t_rows_tile, self.t_hint), axis=2)
+        t_scattered = tf.scatter_nd(t_indices, t_hint_att, [t_batch_size, guide.n_modules])
+
+        self.t_attention = t_scattered
+
+    def init(self, inst, obs):
+        return [ControllerState(
+                    self.task_index.index(it.task), self.guide.guide_for(it.task),
+                    ob, None)
+                for it, ob in zip(inst, obs)]
+
+    def feed(self, state):
+        return {
+            self.t_obs: [s.obs for s in state],
+            self.t_hint: [s.hint + [0] * (self.guide.max_len - len(s.hint)) for s in state],
+            self.t_task: [s.task for s in state],
+            self.t_len: [len(s.hint) for s in state],
+            #self.t_attention: np.zeros((len(state), self.guide.n_modules))
+        }
+
+    def step(self, state, action, ret, obs, att):
+        state_ = []
+        stop = []
+        for i in range(len(state)):
+            if not ret[i]:
+                state_.append(state[i])
+                stop.append(False)
+                continue
+            s_ = state[i]._replace(obs=obs[i])
+            state_.append(s_)
+            stop.append(np.random.random() < att[i][0])
+        return state_, stop
+
 class ModularModel(object):
     def __init__(self, config, world, guide):
         self.world = world
@@ -176,6 +244,8 @@ class ModularModel(object):
 
         if config.model.controller.type == "sketch":
             self.controller = SketchController(config, self.t_obs, world, guide)
+        elif config.model.controller.type == "att":
+            self.controller = AttController(config, self.t_obs, world, guide)
         else:
             assert False
 
@@ -227,8 +297,8 @@ class ModularModel(object):
 
     def act(self, obs, mstate, task, session):
         actor_state, controller_state = zip(*mstate)
-        action_p, action_b, action_t = session.run(
-            [self.t_action_param, self.t_action_bias, self.t_action_temp],
+        action_p, action_b, action_t, att = session.run(
+            [self.t_action_param, self.t_action_bias, self.t_action_temp, self.controller.t_attention],
             self.feed(obs, mstate))
 
         action, ret = self.action_dist.sample(action_p, action_b, action_t)
@@ -242,7 +312,7 @@ class ModularModel(object):
             if any_ret[i] == 1:
                 actor_state_[i] = actor_state_[i]._replace(step=0)
 
-        controller_state_, stop = self.controller.step(controller_state, action, any_ret)
+        controller_state_, stop = self.controller.step(controller_state, action, any_ret, obs, att)
 
         mstate_ = zip(actor_state_, controller_state_)
 

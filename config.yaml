@@ -13,7 +13,9 @@ model:
     n_hidden: [128]
     ret_bias: -3
   controller:
-    type: sketch
+    type: att
+    n_hidden: 128
+    n_embed: 64
   critic:
     type: linear
 

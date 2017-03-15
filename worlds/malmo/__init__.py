@@ -13,8 +13,10 @@ class MalmoWorld(object):
     def __init__(self, config):
         self.config = config
         self.client = client_manager.Client()
-        self.n_actions = client_manager.N_ACTIONS
-        self.n_features = client_manager.N_FEATURES
+        self.n_act = client_manager.N_ACTIONS
+        self.n_obs = client_manager.N_FEATURES
+        # TODO
+        self.n_tasks = 100
 
     def sample_task(self):
         mission = mission_generator.sample()
