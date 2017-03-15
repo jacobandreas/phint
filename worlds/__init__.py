@@ -1,9 +1,8 @@
-import logging
-
+import sys
 try:
     from malmo import MalmoWorld
 except Exception as e:
-    logging.warn("Unable to load Malmo")
+    print >>sys.stderr, "Warning: unable to load Malmo"
 from minicraft import MinicraftWorld
 
 def load(config):
