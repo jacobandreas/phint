@@ -2,7 +2,7 @@ import logging
 
 try:
     from malmo import MalmoWorld
-except e:
+except Exception as e:
     logging.warn("Unable to load Malmo")
 from minicraft import MinicraftWorld
 
