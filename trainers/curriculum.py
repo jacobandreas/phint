@@ -97,6 +97,8 @@ class CurriculumTrainer(object):
             complete_rew = world.complete(task)
             for i in range(n_batch):
                 if not stop[i]:
+                    if action[i][0] == 6:
+                        assert agent_stop[i]
                     rew_here = rew[i]
                     if agent_stop[i]:
                         rew_here += complete_rew[i]

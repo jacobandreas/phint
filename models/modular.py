@@ -40,6 +40,8 @@ class DiscreteDist(object):
     def sample(self, param, bias, temp):
         prob = np.exp(param * temp[:, np.newaxis] + bias)
         prob /= prob.sum(axis=1, keepdims=True)
+        #print prob[0, :]
+        #print "temp", temp
         actions = [self.random.choice(len(row), p=row) for row in prob]
         n_actions = prob.shape[1]
         rets = [action == n_actions - 2 for action in actions]
@@ -80,7 +82,7 @@ class DiscreteActors(object):
                             factor=INIT_SCALE))
                 if i_layer == len(widths) - 1:
                     init = np.zeros((width, guide.n_modules))
-                    init[-1, :] = config.model.actor.ret_bias
+                    init[world.n_act, :] = config.model.actor.ret_bias
                 else:
                     init = 0
                 v_b = tf.get_variable(
@@ -103,8 +105,8 @@ class DiscreteActors(object):
         self.t_action_param = prev_layer
         #self.t_action_bias = v_b
         mask = np.zeros((world.n_act + 2, guide.n_modules), dtype=np.float32)
-        mask[:-1, 0] = -20
-        mask[-1, 1:] = -20
+        mask[:-1, 0] = -10
+        mask[-1, 1:] = -4
         self.t_action_bias = v_b + tf.constant(mask)
         self.t_action_temp = tf.stop_gradient(tf.exp(tf.get_variable(
                 "action_temp",
@@ -188,15 +190,16 @@ class AttController(object):
         t_hint_repr = tf.reduce_mean(t_hint_states, axis=0)
         t_state_repr = tf.expand_dims(tf.nn.relu(_linear(t_obs, n_hidden)), axis=1)
         t_att_score = tf.reduce_sum(t_hint_repr * t_state_repr, axis=2)
-        t_hint_att = tf.nn.softmax(t_att_score)
+        #t_hint_att = tf.nn.softmax(t_att_score)
 
         # attention to modules
         t_rows = tf.expand_dims(tf.range(t_batch_size), 1)
         t_rows_tile = tf.tile(t_rows, (1, guide.max_len))
         t_indices = tf.stack((t_rows_tile, self.t_hint), axis=2)
-        t_scattered = tf.scatter_nd(t_indices, t_hint_att, [t_batch_size, guide.n_modules])
+        t_scattered = tf.scatter_nd(t_indices, t_att_score, [t_batch_size, guide.n_modules])
+        t_scattered = t_scattered + tf.constant([[-3]+[0]*(guide.n_modules-1)], dtype=tf.float32)
 
-        self.t_attention = t_scattered
+        self.t_attention = tf.nn.softmax(t_scattered)
 
     def init(self, inst, obs):
         return [ControllerState(
@@ -217,14 +220,13 @@ class AttController(object):
         state_ = []
         stop = []
         for i in range(len(state)):
-            if not ret[i]:
-                state_.append(state[i])
-                stop.append(False)
-                continue
-            s_ = state[i]._replace(obs=obs[i])
+            if ret[i]:
+                s_ = state[i]._replace(obs=obs[i])
+            else:
+                s_ = state[i]
             state_.append(s_)
             #stop.append(np.random.random() < att[i][0])
-            stop.append(action[i]) == self.world.n_act + 1
+            stop.append(action[i] == self.world.n_act + 1)
         return state_, stop
 
 class ModularModel(object):
@@ -268,6 +270,11 @@ class ModularModel(object):
                 self.actors.t_action_bias * t_att_bc, axis=2)
         self.t_action_temp = tf.reduce_sum(
                 self.actors.t_action_temp * t_att, axis=1)
+
+        #print self.actors.t_action_temp.get_shape()
+        #print t_att.get_shape()
+        #print self.t_action_temp.get_shape()
+        #exit()
 
         # TODO cleanup?
         self.t_action_param_old = tf.reduce_sum(
@@ -321,6 +328,11 @@ class ModularModel(object):
         controller_state_, stop = self.controller.step(controller_state, action, any_ret, obs, att)
 
         mstate_ = zip(actor_state_, controller_state_)
+
+        #print att[0, :]
+        #print action_b[0, :]
+        #print action[0]
+        #print
 
         return zip(action, ret), stop, mstate_
 
