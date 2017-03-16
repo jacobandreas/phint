@@ -222,7 +222,7 @@ class AttController(object):
                 stop.append(False)
                 continue
             s_ = state[i]._replace(obs=obs[i])
-            #state_.append(s_)
+            state_.append(s_)
             #stop.append(np.random.random() < att[i][0])
             stop.append(action[i]) == self.world.n_act + 1
         return state_, stop
