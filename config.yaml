@@ -11,7 +11,7 @@ model:
   actor:
     type: discrete
     n_hidden: [128]
-    ret_bias: -3
+    ret_bias: -2
   controller:
     type: att
     n_hidden: 128
