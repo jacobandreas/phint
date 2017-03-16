@@ -42,7 +42,7 @@ class DiscreteDist(object):
         prob /= prob.sum(axis=1, keepdims=True)
         actions = [self.random.choice(len(row), p=row) for row in prob]
         n_actions = prob.shape[1]
-        rets = [action == n_actions - 1 for action in actions]
+        rets = [action == n_actions - 2 for action in actions]
         return actions, rets
 
     def log_prob_of(self, t_param, t_bias, t_temp, t_action, t_ret):
@@ -70,7 +70,7 @@ class DiscreteActors(object):
         with tf.variable_scope("actors") as scope:
             prev_width = world.n_obs
             prev_layer = t_obs
-            widths = config.model.actor.n_hidden + [world.n_act + 1]
+            widths = config.model.actor.n_hidden + [world.n_act + 2]
             activations = [tf.nn.tanh] * (len(widths) - 1) + [None]
             for i_layer, (width, act) in enumerate(zip(widths, activations)):
                 v_w = tf.get_variable(
@@ -101,7 +101,11 @@ class DiscreteActors(object):
                 self.params = util.vars_in_scope(scope)
 
         self.t_action_param = prev_layer
-        self.t_action_bias = v_b
+        #self.t_action_bias = v_b
+        mask = np.zeros((world.n_act + 2, guide.n_modules), dtype=np.float32)
+        mask[:-1, 0] = -20
+        mask[-1, 1:] = -20
+        self.t_action_bias = v_b + tf.constant(mask)
         self.t_action_temp = tf.stop_gradient(tf.exp(tf.get_variable(
                 "action_temp",
                 shape=(guide.n_modules,),
@@ -166,6 +170,7 @@ class SketchController(object):
 class AttController(object):
     def __init__(self, config, t_obs, world, guide):
         self.guide = guide
+        self.world = world
         self.task_index = util.Index()
         n_hidden = config.model.controller.n_hidden
         n_embed = config.model.controller.n_embed
@@ -217,8 +222,9 @@ class AttController(object):
                 stop.append(False)
                 continue
             s_ = state[i]._replace(obs=obs[i])
-            state_.append(s_)
-            stop.append(np.random.random() < att[i][0])
+            #state_.append(s_)
+            #stop.append(np.random.random() < att[i][0])
+            stop.append(action[i]) == self.world.n_act + 1
         return state_, stop
 
 class ModularModel(object):
