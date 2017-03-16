@@ -38,7 +38,8 @@ class DiscreteDist(object):
         self.random = util.next_random()
 
     def sample(self, param, bias, temp):
-        prob = np.exp(param * temp[:, np.newaxis] + bias)
+        #prob = np.exp(param * temp[:, np.newaxis] + bias)
+        prob = np.exp(param)
         prob /= prob.sum(axis=1, keepdims=True)
         #print prob[0, :]
         #print "temp", temp
@@ -48,14 +49,17 @@ class DiscreteDist(object):
         return actions, rets
 
     def log_prob_of(self, t_param, t_bias, t_temp, t_action, t_ret):
-        t_score = t_param * tf.expand_dims(t_temp, axis=1) + t_bias
+        #t_score = t_param * tf.expand_dims(t_temp, axis=1) + t_bias
+        t_score = t_param
         t_log_prob = tf.nn.log_softmax(t_score)
         t_chosen = util.batch_gather(t_log_prob, t_action)
         return t_chosen
 
     def likelihood_ratio_of(self, t_param, t_bias, t_temp, t_param_old, t_bias_old, t_temp_old, t_action, t_ret):
-        t_score = t_param * tf.expand_dims(t_temp, axis=1) + t_bias
-        t_score_old = t_param_old * tf.expand_dims(t_temp_old, axis=1) + t_bias_old
+        #t_score = t_param * tf.expand_dims(t_temp, axis=1) + t_bias
+        #t_score_old = t_param_old * tf.expand_dims(t_temp_old, axis=1) + t_bias_old
+        t_score = t_param
+        t_score_old = t_param_old
         t_prob = tf.nn.softmax(t_score)
         t_prob_old = tf.nn.softmax(t_score_old)
         t_chosen = util.batch_gather(t_prob, t_action)
@@ -63,7 +67,8 @@ class DiscreteDist(object):
         return (t_chosen + TINY) / (t_chosen_old + TINY)
 
     def entropy(self, t_param, t_bias, t_temp):
-        t_prob = tf.nn.softmax(t_param * tf.expand_dims(t_temp, axis=1) + t_bias)
+        #t_prob = tf.nn.softmax(t_param * tf.expand_dims(t_temp, axis=1) + t_bias)
+        t_prob = tf.nn.softmax(t_param)
         t_logprob = tf.log(t_prob + TINY)
         return -tf.reduce_sum(t_prob * t_logprob, axis=1)
 
@@ -93,21 +98,22 @@ class DiscreteActors(object):
                     op = "ij,jkl->ikl"
                 else:
                     op = "ijl,jkl->ikl"
-                layer = tf.einsum(op, prev_layer, v_w)
+                layer = tf.einsum(op, prev_layer, v_w) + v_b
                 # TODO jda
                 if act is not None:
-                    layer = act(layer + v_b)
+                    layer = act(layer)
                 prev_layer = layer
                 prev_width = width
 
                 self.params = util.vars_in_scope(scope)
 
-        self.t_action_param = prev_layer
+        #self.t_action_param = prev_layer
         #self.t_action_bias = v_b
         mask = np.zeros((world.n_act + 2, guide.n_modules), dtype=np.float32)
         mask[:-1, 0] = -10
-        mask[-1, 1:] = -4
-        self.t_action_bias = v_b + tf.constant(mask)
+        mask[-1, 1:] = -10
+        self.t_action_bias = v_b
+        self.t_action_param = tf.nn.softmax(layer + tf.constant(mask), dim=1)
         self.t_action_temp = tf.stop_gradient(tf.exp(tf.get_variable(
                 "action_temp",
                 shape=(guide.n_modules,),
@@ -264,8 +270,8 @@ class ModularModel(object):
 
         t_att = self.controller.t_attention
         t_att_bc = tf.expand_dims(t_att, axis=1)
-        self.t_action_param = tf.reduce_sum(
-                self.actors.t_action_param * t_att_bc, axis=2)
+        self.t_action_param = tf.log(tf.reduce_sum(
+                self.actors.t_action_param * t_att_bc, axis=2))
         self.t_action_bias = tf.reduce_sum(
                 self.actors.t_action_bias * t_att_bc, axis=2)
         self.t_action_temp = tf.reduce_sum(
@@ -310,8 +316,8 @@ class ModularModel(object):
 
     def act(self, obs, mstate, task, session):
         actor_state, controller_state = zip(*mstate)
-        action_p, action_b, action_t, att = session.run(
-            [self.t_action_param, self.t_action_bias, self.t_action_temp, self.controller.t_attention],
+        action_p, action_b, action_t, att, ap = session.run(
+            [self.t_action_param, self.t_action_bias, self.t_action_temp, self.controller.t_attention, self.actors.t_action_param],
             self.feed(obs, mstate))
 
         action, ret = self.action_dist.sample(action_p, action_b, action_t)
@@ -328,11 +334,6 @@ class ModularModel(object):
         controller_state_, stop = self.controller.step(controller_state, action, any_ret, obs, att)
 
         mstate_ = zip(actor_state_, controller_state_)
-
-        #print att[0, :]
-        #print action_b[0, :]
-        #print action[0]
-        #print
 
         return zip(action, ret), stop, mstate_
 
