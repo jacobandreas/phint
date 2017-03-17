@@ -35,8 +35,8 @@ class CurriculumTrainer(object):
         counts = defaultdict(lambda: 1.) # ick
         rewards = defaultdict(lambda: 0.)
         err = 0
-        #max_len = min(len(task.hint) for task in world.tasks)
-        max_len = 100
+        max_len = min(len(task.hint) for task in world.tasks)
+        #max_len = 100
         task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
         assert task_probs is not None
 

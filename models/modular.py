@@ -176,7 +176,7 @@ class SketchController(object):
         # TODO max task len
 
 class AttController(object):
-    def __init__(self, config, t_obs, world, guide):
+    def __init__(self, config, t_world_obs, world, guide):
         self.guide = guide
         self.world = world
         self.task_index = util.Index()
@@ -194,7 +194,7 @@ class AttController(object):
         t_hint_states, _ = tf.nn.bidirectional_dynamic_rnn(
                 cell, cell, t_embed, self.t_len, dtype=tf.float32)
         t_hint_repr = tf.reduce_mean(t_hint_states, axis=0)
-        t_state_repr = tf.expand_dims(tf.nn.relu(_linear(t_obs, n_hidden)), axis=1)
+        t_state_repr = tf.expand_dims(tf.nn.relu(_linear(self.t_obs, n_hidden)), axis=1)
         t_att_score = tf.reduce_sum(t_hint_repr * t_state_repr, axis=2)
         #t_hint_att = tf.nn.softmax(t_att_score)
 
