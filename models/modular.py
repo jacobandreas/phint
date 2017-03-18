@@ -177,6 +177,7 @@ class SketchController(object):
 
 class AttController(object):
     def __init__(self, config, t_world_obs, world, guide):
+        self.config = config
         self.guide = guide
         self.world = world
         self.task_index = util.Index()
@@ -226,7 +227,7 @@ class AttController(object):
         state_ = []
         stop = []
         for i in range(len(state)):
-            if ret[i]:
+            if ret[i] or self.config.model.controller.update == "continuous":
                 s_ = state[i]._replace(obs=obs[i])
             else:
                 s_ = state[i]
