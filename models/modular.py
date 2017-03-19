@@ -13,7 +13,7 @@ TINY = 1e-8
 ActorState = namedtuple("ActorState", ["step"])
 ControllerState = namedtuple(
         "ControllerState", 
-        ["task", "hint", "obs", "index", "current_att", "total_att"])
+        ["task", "hint", "obs", "index", "current_att", "total_att", "sampler_state"])
 
 def _linear(t_in, n_out):
     assert len(t_in.get_shape()) == 2
@@ -190,6 +190,7 @@ class AttController(object):
         t_batch_size = tf.shape(self.t_hint)[0]
         self.t_task = tf.placeholder(tf.int32, shape=(None,))
         self.t_len = tf.placeholder(tf.int32, shape=(None,))
+        self.t_gumbel = tf.placeholder(tf.float32, shape=(None, guide.n_modules))
 
         # attention to hint
         t_embed = _embed(self.t_hint, guide.n_modules, n_embed)
@@ -207,6 +208,8 @@ class AttController(object):
         t_indices = tf.stack((t_rows_tile, self.t_hint), axis=2)
         t_scattered = tf.scatter_nd(t_indices, t_att_score, [t_batch_size, guide.n_modules])
         t_scattered = t_scattered + tf.constant([[-3]+[0]*(guide.n_modules-1)], dtype=tf.float32)
+        if config.model.controller.gumbel:
+            t_scattered += self.t_gumbel
 
         self.t_seq_attention = tf.nn.softmax(t_att_score)
         self.t_mod_attention = tf.nn.softmax(t_scattered)
@@ -217,7 +220,8 @@ class AttController(object):
             guide = self.guide.guide_for(it.task)
             out.append(ControllerState(
                     self.task_index.index(it.task), guide,
-                    ob, None, np.zeros(len(guide)), np.zeros(len(guide))))
+                    ob, None, np.zeros(len(guide)), np.zeros(len(guide)),
+                    np.random.gumbel(size=self.guide.n_modules)))
         return out
 
     def feed(self, state):
@@ -226,6 +230,7 @@ class AttController(object):
             self.t_hint: [s.hint + [0] * (self.guide.max_len - len(s.hint)) for s in state],
             self.t_task: [s.task for s in state],
             self.t_len: [len(s.hint) for s in state],
+            self.t_gumbel: [s.sampler_state for s in state]
         }
 
     def step(self, state, action, ret, obs, att):
@@ -239,8 +244,9 @@ class AttController(object):
                 new_total_att = np.minimum(old_total_att + att_here, 1)
                 extra = np.sum(new_total_att - old_total_att)
                 reward.append(extra)
+                rand = np.random.gumbel(size=self.guide.n_modules)
                 s_ = state[i]._replace(obs=obs[i], current_att=att,
-                        total_att=new_total_att)
+                        total_att=new_total_att, sampler_state=rand)
             else:
                 s_ = state[i]
                 reward.append(0)

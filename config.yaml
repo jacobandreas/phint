@@ -1,4 +1,4 @@
-name: test
+name: discrete_with_gumbel
 
 world: 
   name: MinicraftWorld
@@ -8,6 +8,7 @@ guide:
 
 model: 
   name: ModularModel
+  intrinsic_bonus: 0.01
   actor:
     type: discrete
     n_hidden: [128]
@@ -18,13 +19,13 @@ model:
     n_embed: 64
     update: discrete
     #update: continuous
+    gumbel: true
   critic:
     type: linear
 
 objective:
   discount: 0.9
   entropy_bonus: 0.001
-  intrinsic_bonus: 0.01
   step_size: 0.001
   n_train_batch: 2000
 

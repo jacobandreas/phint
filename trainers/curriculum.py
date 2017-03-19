@@ -96,7 +96,7 @@ class CurriculumTrainer(object):
                     obs, mstate, task, self.session)
             world_action, _  = zip(*action)
             obs_, world_rew, world_stop = world.step(world_action, task)
-            rew = np.asarray(world_rew) + self.config.objective.intrinsic_bonus * np.asarray(intrinsic_rew)
+            rew = np.asarray(world_rew) + self.config.model.intrinsic_bonus * np.asarray(intrinsic_rew)
             complete_rew = world.complete(task)
             for i in range(n_batch):
                 if not stop[i]:
