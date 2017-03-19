@@ -243,6 +243,7 @@ class AttController(object):
                         total_att=new_total_att)
             else:
                 s_ = state[i]
+                reward.append(0)
             state_.append(s_)
             #stop.append(np.random.random() < att[i][0])
             stop.append(action[i] == self.world.n_act + 1)
