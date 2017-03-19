@@ -11,7 +11,9 @@ INIT_SCALE = 1.43
 TINY = 1e-8
 
 ActorState = namedtuple("ActorState", ["step"])
-ControllerState = namedtuple("ControllerState", ["task", "hint", "obs", "index"])
+ControllerState = namedtuple(
+        "ControllerState", 
+        ["task", "hint", "obs", "index", "current_att", "total_att"])
 
 def _linear(t_in, n_out):
     assert len(t_in.get_shape()) == 2
@@ -206,13 +208,17 @@ class AttController(object):
         t_scattered = tf.scatter_nd(t_indices, t_att_score, [t_batch_size, guide.n_modules])
         t_scattered = t_scattered + tf.constant([[-3]+[0]*(guide.n_modules-1)], dtype=tf.float32)
 
-        self.t_attention = tf.nn.softmax(t_scattered)
+        self.t_seq_attention = tf.nn.softmax(t_att_score)
+        self.t_mod_attention = tf.nn.softmax(t_scattered)
 
     def init(self, inst, obs):
-        return [ControllerState(
-                    self.task_index.index(it.task), self.guide.guide_for(it.task),
-                    ob, None)
-                for it, ob in zip(inst, obs)]
+        out = []
+        for it, ob in zip(inst, obs):
+            guide = self.guide.guide_for(it.task)
+            out.append(ControllerState(
+                    self.task_index.index(it.task), guide,
+                    ob, None, np.zeros(len(guide)), np.zeros(len(guide))))
+        return out
 
     def feed(self, state):
         return {
@@ -220,21 +226,27 @@ class AttController(object):
             self.t_hint: [s.hint + [0] * (self.guide.max_len - len(s.hint)) for s in state],
             self.t_task: [s.task for s in state],
             self.t_len: [len(s.hint) for s in state],
-            #self.t_attention: np.zeros((len(state), self.guide.n_modules))
         }
 
     def step(self, state, action, ret, obs, att):
         state_ = []
         stop = []
+        reward = []
         for i in range(len(state)):
             if ret[i] or self.config.model.controller.update == "continuous":
-                s_ = state[i]._replace(obs=obs[i])
+                old_total_att = state[i].total_att
+                att_here = att[i, :len(state[i].hint)]
+                new_total_att = np.minimum(old_total_att + att_here, 1)
+                extra = np.sum(new_total_att - old_total_att)
+                reward.append(extra)
+                s_ = state[i]._replace(obs=obs[i], current_att=att,
+                        total_att=new_total_att)
             else:
                 s_ = state[i]
             state_.append(s_)
             #stop.append(np.random.random() < att[i][0])
             stop.append(action[i] == self.world.n_act + 1)
-        return state_, stop
+        return state_, stop, reward
 
 class ModularModel(object):
     def __init__(self, config, world, guide):
@@ -269,7 +281,7 @@ class ModularModel(object):
         else:
             assert False
 
-        t_att = self.controller.t_attention
+        t_att = self.controller.t_mod_attention
         t_att_bc = tf.expand_dims(t_att, axis=1)
         self.t_action_param = tf.log(tf.reduce_sum(
                 self.actors.t_action_param * t_att_bc, axis=2))
@@ -318,7 +330,7 @@ class ModularModel(object):
     def act(self, obs, mstate, task, session):
         actor_state, controller_state = zip(*mstate)
         action_p, action_b, action_t, att, ap = session.run(
-            [self.t_action_param, self.t_action_bias, self.t_action_temp, self.controller.t_attention, self.actors.t_action_param],
+            [self.t_action_param, self.t_action_bias, self.t_action_temp, self.controller.t_seq_attention, self.actors.t_action_param],
             self.feed(obs, mstate))
 
         action, ret = self.action_dist.sample(action_p, action_b, action_t)
@@ -332,11 +344,11 @@ class ModularModel(object):
             if any_ret[i] == 1:
                 actor_state_[i] = actor_state_[i]._replace(step=0)
 
-        controller_state_, stop = self.controller.step(controller_state, action, any_ret, obs, att)
+        controller_state_, stop, controller_reward = self.controller.step(controller_state, action, any_ret, obs, att)
 
         mstate_ = zip(actor_state_, controller_state_)
 
-        return zip(action, ret), stop, mstate_
+        return zip(action, ret), stop, mstate_, controller_reward
 
     def save(self, session):
         self.saver.save(

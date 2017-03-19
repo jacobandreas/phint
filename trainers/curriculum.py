@@ -47,7 +47,7 @@ class CurriculumTrainer(object):
             i_rollout += self.config.trainer.n_rollout_batch
             objective.experience(buf)
             for it, r in zip(inst, total_reward):
-                assert r <= 1
+                #assert r <= 1
                 counts[it.task] += 1
                 rewards[it.task] += r
 
@@ -92,9 +92,11 @@ class CurriculumTrainer(object):
         buf = [[] for _ in range(n_batch)]
         total_reward = np.zeros(n_batch)
         while max(len(b) for b in buf) < self.config.trainer.max_rollout_len and not all(stop):
-            action, agent_stop, mstate_ = model.act(obs, mstate, task, self.session)
+            action, agent_stop, mstate_, intrinsic_rew = model.act(
+                    obs, mstate, task, self.session)
             world_action, _  = zip(*action)
-            obs_, rew, world_stop = world.step(world_action, task)
+            obs_, world_rew, world_stop = world.step(world_action, task)
+            rew = np.asarray(world_rew) + self.config.objective.intrinsic_bonus * np.asarray(intrinsic_rew)
             complete_rew = world.complete(task)
             for i in range(n_batch):
                 if not stop[i]:
