@@ -1,4 +1,4 @@
-name: continuous_with_gumbel
+name: continuous_with_gumbel_nobonus
 
 world: 
   name: MinicraftWorld
@@ -8,7 +8,7 @@ guide:
 
 model: 
   name: ModularModel
-  intrinsic_bonus: 0.01
+  intrinsic_bonus: 0
   actor:
     type: discrete
     n_hidden: [128]
