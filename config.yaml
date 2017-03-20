@@ -1,4 +1,4 @@
-name: continuous_with_small_gumbel
+name: discrete_with_small_gumbel
 
 world: 
   name: MinicraftWorld
@@ -17,8 +17,8 @@ model:
     type: att
     n_hidden: 128
     n_embed: 64
-    #update: discrete
-    update: continuous
+    update: discrete
+    #update: continuous
     gumbel: true
   critic:
     type: linear
