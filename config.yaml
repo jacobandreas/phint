@@ -1,4 +1,4 @@
-name: continuous_with_gumbel
+name: discrete_with_gumbel_nobonus
 
 world: 
   name: MinicraftWorld
@@ -8,7 +8,7 @@ guide:
 
 model: 
   name: ModularModel
-  intrinsic_bonus: 0.01
+  intrinsic_bonus: 0
   actor:
     type: discrete
     n_hidden: [128]
@@ -17,8 +17,8 @@ model:
     type: att
     n_hidden: 128
     n_embed: 64
-    #update: discrete
-    update: continuous
+    update: discrete
+    #update: continuous
     gumbel: true
   critic:
     type: linear
