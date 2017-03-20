@@ -209,7 +209,7 @@ class AttController(object):
         t_scattered = tf.scatter_nd(t_indices, t_att_score, [t_batch_size, guide.n_modules])
         t_scattered = t_scattered + tf.constant([[-3]+[0]*(guide.n_modules-1)], dtype=tf.float32)
         if config.model.controller.gumbel:
-            t_scattered += self.t_gumbel
+            t_scattered += 0.1 * self.t_gumbel
 
         self.t_seq_attention = tf.nn.softmax(t_att_score)
         self.t_mod_attention = tf.nn.softmax(t_scattered)
