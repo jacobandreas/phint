@@ -4,6 +4,7 @@ try:
 except Exception as e:
     print >>sys.stderr, "Warning: unable to load Malmo"
 from minicraft import MinicraftWorld
+from shurdlurn import ShurdlurnWorld
 
 def load(config):
     cls_name = config.world.name

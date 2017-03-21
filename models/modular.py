@@ -1,4 +1,5 @@
 from misc import util
+from net import _linear, _embed
 
 import bisect
 from collections import defaultdict, namedtuple
@@ -14,26 +15,6 @@ ActorState = namedtuple("ActorState", ["step"])
 ControllerState = namedtuple(
         "ControllerState", 
         ["task", "hint", "obs", "index", "current_att", "total_att", "sampler_state"])
-
-def _linear(t_in, n_out):
-    assert len(t_in.get_shape()) == 2
-    v_w = tf.get_variable(
-            "w",
-            shape=(t_in.get_shape()[1], n_out),
-            initializer=tf.uniform_unit_scaling_initializer(
-                factor=INIT_SCALE))
-    v_b = tf.get_variable(
-            "b",
-            shape=n_out,
-            initializer=tf.constant_initializer(0))
-    return tf.einsum("ij,jk->ik", t_in, v_w) + v_b
-
-def _embed(t_in, n_embeddings, n_out):
-    v = tf.get_variable(
-            "embed", shape=(n_embeddings, n_out),
-            initializer=tf.uniform_unit_scaling_initializer())
-    t_embed = tf.nn.embedding_lookup(v, t_in)
-    return t_embed
 
 class DiscreteDist(object):
     def __init__(self):
@@ -255,6 +236,84 @@ class AttController(object):
             stop.append(action[i] == self.world.n_act + 1)
         return state_, stop, reward
 
+class FreeAttController(object):
+    def __init__(self, config, t_world_obs, world, guide):
+        self.config = config
+        self.guide = guide
+        self.world = world
+        self.task_index = util.Index()
+        n_hidden = config.model.controller.n_hidden
+        n_embed = config.model.controller.n_embed
+        self.t_obs = tf.placeholder(tf.float32, shape=(None, world.n_obs))
+        self.t_hint = tf.placeholder(tf.int32, shape=(None, guide.max_len))
+        t_batch_size = tf.shape(self.t_hint)[0]
+        self.t_task = tf.placeholder(tf.int32, shape=(None,))
+        self.t_len = tf.placeholder(tf.int32, shape=(None,))
+        self.t_gumbel = tf.placeholder(tf.float32, shape=(None, guide.n_modules))
+
+        # attention to hint
+        t_embed = _embed(self.t_hint, guide.n_modules, n_embed)
+        cell = tf.contrib.rnn.GRUCell(n_hidden)
+        t_hint_states, _ = tf.nn.bidirectional_dynamic_rnn(
+                cell, cell, t_embed, self.t_len, dtype=tf.float32)
+        t_hint_repr = tf.reduce_mean(t_hint_states, axis=0)
+        t_state_repr = tf.expand_dims(tf.nn.relu(_linear(self.t_obs, n_hidden)), axis=1)
+        t_att_score = tf.reduce_sum(t_hint_repr * t_state_repr, axis=2)
+        #t_hint_att = tf.nn.softmax(t_att_score)
+
+        # attention to modules
+        t_rows = tf.expand_dims(tf.range(t_batch_size), 1)
+        t_rows_tile = tf.tile(t_rows, (1, guide.max_len))
+        t_indices = tf.stack((t_rows_tile, self.t_hint), axis=2)
+        t_scattered = tf.scatter_nd(t_indices, t_att_score, [t_batch_size, guide.n_modules])
+        t_scattered = t_scattered + tf.constant([[-3]+[0]*(guide.n_modules-1)], dtype=tf.float32)
+        if config.model.controller.gumbel:
+            t_scattered += 0.1 * self.t_gumbel
+
+        self.t_seq_attention = tf.nn.softmax(t_att_score)
+        self.t_mod_attention = tf.nn.softmax(t_scattered)
+
+    def init(self, inst, obs):
+        out = []
+        for it, ob in zip(inst, obs):
+            guide = self.guide.guide_for(it.task)
+            out.append(ControllerState(
+                    self.task_index.index(it.task), guide,
+                    ob, None, np.zeros(len(guide)), np.zeros(len(guide)),
+                    np.random.gumbel(size=self.guide.n_modules)))
+        return out
+
+    def feed(self, state):
+        return {
+            self.t_obs: [s.obs for s in state],
+            self.t_hint: [s.hint + [0] * (self.guide.max_len - len(s.hint)) for s in state],
+            self.t_task: [s.task for s in state],
+            self.t_len: [len(s.hint) for s in state],
+            self.t_gumbel: [s.sampler_state for s in state]
+        }
+
+    def step(self, state, action, ret, obs, att):
+        state_ = []
+        stop = []
+        reward = []
+        for i in range(len(state)):
+            if ret[i] or self.config.model.controller.update == "continuous":
+                old_total_att = state[i].total_att
+                att_here = att[i, :len(state[i].hint)]
+                new_total_att = np.minimum(old_total_att + att_here, 1)
+                extra = np.sum(new_total_att - old_total_att)
+                reward.append(extra)
+                rand = np.random.gumbel(size=self.guide.n_modules)
+                s_ = state[i]._replace(obs=obs[i], current_att=att,
+                        total_att=new_total_att, sampler_state=rand)
+            else:
+                s_ = state[i]
+                reward.append(0)
+            state_.append(s_)
+            #stop.append(np.random.random() < att[i][0])
+            stop.append(action[i] == self.world.n_act + 1)
+        return state_, stop, reward
+
 class ModularModel(object):
     def __init__(self, config, world, guide):
         self.world = world
@@ -273,6 +332,10 @@ class ModularModel(object):
             self.actors = DiscreteActors(config, self.t_obs, world, guide)
             with tf.variable_scope("old"):
                 self.actors_old = DiscreteActors(config, self.t_obs, world, guide)
+        elif config.model.actor.type == "embedded":
+            self.actors = EmbeddedActors(config, self.t_obs, world, guide)
+            with tf.variable_scope("old"):
+                self.actors_old = EmbeddedActors(config, self.t_obs, world, guide)
         else:
             assert False
 
