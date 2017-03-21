@@ -1,7 +1,7 @@
-name: test
+name: discrete-small-gumbel
 
 world: 
-  name: ShurdlurnWorld
+  name: MinicraftWorld
 
 guide:
   name: SketchGuide
@@ -17,9 +17,8 @@ model:
     type: att
     n_hidden: 128
     n_embed: 64
-    #update: discrete
-    update: continuous
-    gumbel: false
+    update: discrete
+    gumbel: true
   critic:
     type: linear
 
