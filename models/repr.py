@@ -37,7 +37,10 @@ class Actor(object):
         widths = config.model.actor.n_hidden + [world.n_act + 2]
         activations = [tf.nn.tanh] * (len(widths) - 1) + [None]
         with tf.variable_scope("actor") as scope:
-            self.t_action_param = _mlp(prev_layer, widths, activations)
+            bias = np.zeros((1, world.n_act + 2), dtype=np.float32)
+            bias[0, -2:] = config.model.actor.ret_bias
+            t_bias = tf.constant(bias)
+            self.t_action_param = _mlp(prev_layer, widths, activations) + t_bias
             self.params = util.vars_in_scope
 
 class Critic(object):

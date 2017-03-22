@@ -113,21 +113,21 @@ class ShurdlurnWorld(object):
         rewards = []
         stops = []
         for a, t in zip(actions, insts):
-            reward, nstate = t.state.step(a)
+            reward, nstate, stop = t.state.step(a)
             t.state = nstate
-            stop = False
             features.append(nstate.features())
             rewards.append(reward)
             stops.append(stop)
         return features, rewards, stops
 
     def complete(self, insts):
-        rewards = []
-        for t in insts:
-            assert t.state.goal == t.task.end
-            r = 1 if t.state.blocks == t.state.goal else 0
-            rewards.append(r)
-        return rewards
+        return [0] * len(insts)
+        #rewards = []
+        #for t in insts:
+        #    assert t.state.goal == t.task.end
+        #    r = 1 if t.state.blocks == t.state.goal else 0
+        #    rewards.append(r)
+        #return rewards
 
 class ShurdlurnState(object):
     def __init__(self, agent_x, blocks, goal, max_width, max_height, n_kinds):
@@ -184,4 +184,6 @@ class ShurdlurnState(object):
             else:
                 new_blocks.append(self.blocks[x])
         new_blocks = tuple(new_blocks)
-        return reward / 10., ShurdlurnState(nx, new_blocks, self.goal, self.max_width, self.max_height, self.n_kinds)
+        nstate = ShurdlurnState(nx, new_blocks, self.goal, self.max_width, self.max_height, self.n_kinds)
+        stop = new_blocks == self.goal
+        return reward / 10., nstate, stop
