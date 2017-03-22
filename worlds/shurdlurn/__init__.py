@@ -95,7 +95,7 @@ class ShurdlurnWorld(object):
         self.n_obs = max_width * max_height * (n_kinds + 1) + max_width
         self.n_act = 2 + 1 + n_kinds
         self.n_tasks = len(tasks)
-        self.tasks = tasks[1:2]
+        self.tasks = tasks[:10]
         self.random = util.next_random()
 
     def sample_instance(self, p=None):
@@ -188,5 +188,4 @@ class ShurdlurnState(object):
         stop = new_blocks == self.goal
         if stop:
             reward += 10
-            print "WIN"
         return reward / 10., nstate, stop
