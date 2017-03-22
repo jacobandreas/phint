@@ -35,10 +35,11 @@ class CurriculumTrainer(object):
         counts = defaultdict(lambda: 1.) # ick
         rewards = defaultdict(lambda: 0.)
         err = 0
-        max_len = min(len(task.hint) for task in world.tasks)
-        #max_len = 100
-        task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
-        assert task_probs is not None
+        #max_len = min(len(task.hint) for task in world.tasks)
+        max_len = 100
+        #task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
+        #assert task_probs is not None
+        task_probs = [1. / len(world.tasks) for _ in world.tasks]
 
         model.save(self.session)
         while True:
@@ -67,19 +68,20 @@ class CurriculumTrainer(object):
                 logging.info("[rollout] %d", i_rollout)
                 logging.info("[step] %d", self.config.objective.n_train_batch * i_iter)
                 logging.info("[err] %s", err / n_update)
-                min_score = 1
+                scores = []
                 for hint in sorted(counts.keys()):
                     score = rewards[hint] / counts[hint]
+                    scores.append(score)
                     logging.info("[reward %s] %f (%d)", util.pp_sexp(hint), 
                             score, counts[hint])
-                    min_score = min(score, min_score)
                 for i_ex, ex in enumerate(examples):
                     logging.info("[rollout %d] %s" % (i_ex, ex))
-                if min_score > 0.8:
+                if min(scores) > 0.8:
                     max_len += 1
                     model.save(self.session)
-                task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
+                #task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
                 #logging.info("[probs] %s", task_probs)
+                logging.info("[mean] %f" % np.mean(scores))
                 logging.info("")
                 counts = defaultdict(lambda: 1.)
                 rewards = defaultdict(lambda: 0.)
