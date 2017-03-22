@@ -34,7 +34,11 @@ def listify(sexp):
     return tuple(out)
 
 ShurdlurnTask = namedtuple("ShurdlurnTask", ["start", "end", "hint"])
-ShurdlurnInstance = namedtuple("ShurdlurnInstance", ["task", "state"])
+#ShurdlurnInstance = namedtuple("ShurdlurnInstance", ["task", "state"])
+class ShurdlurnInstance(object):
+    def __init__(self, task, state):
+        self.task = task
+        self.state = state
 
 class ShurdlurnWorld(object):
     def __init__(self, config):
@@ -80,7 +84,7 @@ class ShurdlurnWorld(object):
         max_height = max(
                 max(max(len(s) for s in t.start) for t in tasks),
                 max(max(len(s) for s in t.end) for t in tasks))
-        n_kinds = 1 + 1 + max(
+        n_kinds = 1 + max(
                 max(max(max(s) if len(s) > 0 else 0 for s in t.start) for t in tasks),
                 max(max(max(s) if len(s) > 0 else 0 for s in t.end) for t in tasks))
 
@@ -88,8 +92,8 @@ class ShurdlurnWorld(object):
         self.max_height = max_height
         self.max_hint_len = max(len(t.hint) for t in tasks)
         self.n_kinds = n_kinds
-        self.n_obs = max_width * max_height * n_kinds + max_width
-        self.n_act = 2 + 1 + (n_kinds - 1)
+        self.n_obs = max_width * max_height * (n_kinds + 1) + max_width
+        self.n_act = 2 + 1 + n_kinds
         self.n_tasks = len(tasks)
         self.tasks = tasks
         self.random = util.next_random()
@@ -98,7 +102,7 @@ class ShurdlurnWorld(object):
         assert p is None or len(p) == len(self.tasks)
         i_task = self.random.choice(len(self.tasks), p=p)
         task = self.tasks[i_task]
-        init_state = ShurdlurnState(0, task.start, self.max_width, self.max_height, self.n_kinds)
+        init_state = ShurdlurnState(0, task.start, task.end, self.max_width, self.max_height, self.n_kinds)
         return ShurdlurnInstance(task, init_state)
 
     def reset(self, tasks):
@@ -117,10 +121,19 @@ class ShurdlurnWorld(object):
             stops.append(stop)
         return features, rewards, stops
 
+    def complete(self, insts):
+        rewards = []
+        for t in insts:
+            assert t.state.goal == t.task.end
+            r = 1 if t.state.blocks == t.state.goal else 0
+            rewards.append(r)
+        return rewards
+
 class ShurdlurnState(object):
-    def __init__(self, agent_x, blocks, max_width, max_height, n_kinds):
+    def __init__(self, agent_x, blocks, goal, max_width, max_height, n_kinds):
         self.agent_x = agent_x
         self.blocks = blocks
+        self.goal = goal
         self.max_width = max_width
         self.max_height = max_height
         self.n_kinds = n_kinds
@@ -128,11 +141,12 @@ class ShurdlurnState(object):
 
     def features(self):
         if self._cached_features is None:
-            board = np.zeros((self.max_width, self.max_height, self.n_kinds))
+            board = np.zeros((self.max_width, self.max_height, self.n_kinds+1))
             pos = np.zeros((self.max_width))
             pos[self.agent_x] = 1
             for x in range(len(self.blocks)):
                 for y in range(len(self.blocks[x])):
+                    assert y >= 0
                     board[x, y, self.blocks[x][y]+1] = 1
             self._cached_features = np.concatenate((board.ravel(), pos))
         return self._cached_features
@@ -142,18 +156,32 @@ class ShurdlurnState(object):
             nx = self.agent_x - 1
         elif action == 1:
             nx = self.agent_x + 1
-        self.agent_x = max(self.agent_x, 0)
-        self.agent_x = min(self.agent_x, self.max_width - 1)
+        else:
+            nx = self.agent_x
+        nx = max(nx, 0)
+        nx = min(nx, self.max_width - 1)
 
         new_blocks = []
+        reward = 0
         for x in range(len(self.blocks)):
             if x == self.agent_x and action == 2:
                 new_blocks.append(self.blocks[x][:-1])
-            elif x == self.agent_x and action > 2:
-                kind = action - 2
+                if len(self.goal[x]) < len(self.blocks[x]):
+                    reward += 1
+                else:
+                    reward -= 1
+            elif (x == self.agent_x 
+                    and action > 2 
+                    and action < self.n_kinds + 2 + 1
+                    and len(self.blocks[x]) < self.max_height - 1):
+                kind = action - 2 - 1
                 assert kind < self.n_kinds
                 new_blocks.append(self.blocks[x] + (kind,))
+                if len(self.goal[x]) > len(self.blocks[x]) and kind == self.goal[x][len(self.blocks[x])]:
+                    reward += 1
+                else:
+                    reward -= 1
             else:
                 new_blocks.append(self.blocks[x])
         new_blocks = tuple(new_blocks)
-        return 0, ShurdlurnState(nx, new_blocks, self.max_width, self.max_height, self.n_kinds)
+        return reward / 10., ShurdlurnState(nx, new_blocks, self.goal, self.max_width, self.max_height, self.n_kinds)

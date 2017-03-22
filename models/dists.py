@@ -18,7 +18,8 @@ class DiscreteDist(object):
         actions = [self.random.choice(len(row), p=row) for row in prob]
         n_actions = prob.shape[1]
         rets = [action == n_actions - 2 for action in actions]
-        return actions, rets
+        stops = [action == n_actions - 1 for action in actions]
+        return actions, rets, stops
 
     def log_prob_of(self, t_param, t_bias, t_temp, t_action, t_ret):
         #t_score = t_param * tf.expand_dims(t_temp, axis=1) + t_bias

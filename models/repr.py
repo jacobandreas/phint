@@ -34,7 +34,7 @@ class EmbeddingController(object):
 class Actor(object):
     def __init__(self, config, t_obs, t_repr, world, guide):
         prev_layer = tf.concat((t_obs, t_repr), axis=1)
-        widths = config.model.actor.n_hidden + [world.n_act]
+        widths = config.model.actor.n_hidden + [world.n_act + 2]
         activations = [tf.nn.tanh] * (len(widths) - 1) + [None]
         with tf.variable_scope("actor") as scope:
             self.t_action_param = _mlp(prev_layer, widths, activations)
@@ -76,8 +76,7 @@ class ReprModel(object):
     def act(self, obs, mstate, task, session):
         n_obs = len(obs)
         action_p, = session.run([self.t_action_param], self.feed(obs, mstate))
-        action, ret = self.action_dist.sample(action_p, None, None)
-        stop = ret
+        action, ret, stop = self.action_dist.sample(action_p, None, None)
         return zip(action, ret), stop, mstate, [0]*n_obs
 
     def save(self, session):

@@ -79,7 +79,7 @@ class CurriculumTrainer(object):
                     max_len += 1
                     model.save(self.session)
                 task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
-                logging.info("[probs] %s", task_probs)
+                #logging.info("[probs] %s", task_probs)
                 logging.info("")
                 counts = defaultdict(lambda: 1.)
                 rewards = defaultdict(lambda: 0.)
@@ -100,8 +100,6 @@ class CurriculumTrainer(object):
             complete_rew = world.complete(task)
             for i in range(n_batch):
                 if not stop[i]:
-                    if action[i][0] == 6:
-                        assert agent_stop[i]
                     rew_here = rew[i]
                     if agent_stop[i]:
                         rew_here += complete_rew[i]
