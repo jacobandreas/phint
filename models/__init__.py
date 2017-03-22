@@ -1,9 +1,5 @@
-#from manual import ManualModel
-#from simple_ac import SimpleACModel
-#from simple_q import SimpleQModel
-#from recurrent_q import RecurrentQModel
-#from memory import MemoryModel
 from modular import ModularModel
+from repr import ReprModel
 
 def load(config, *args):
     cls_name = config.model.name

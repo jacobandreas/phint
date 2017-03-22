@@ -1,4 +1,4 @@
-name: discrete-small-gumbel
+name: test
 
 world: 
   name: MinicraftWorld
@@ -7,7 +7,7 @@ guide:
   name: SketchGuide
 
 model: 
-  name: ModularModel
+  name: ReprModel
   intrinsic_bonus: 0
   actor:
     type: discrete

@@ -17,7 +17,7 @@ import yaml
 def main():
     config = configure()
     world = worlds.load(config)
-    guide = guides.load(config)
+    guide = guides.load(config, world)
     model = models.load(config, world, guide)
     #objective = Ppo(config, model)
     objective = Reinforce(config, model)

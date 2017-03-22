@@ -64,12 +64,14 @@ class MinicraftWorld(object):
         self.config = config
         self.cookbook = cookbook.Cookbook("worlds/minicraft/recipes.yaml")
         self.tasks = []
+        self.vocab = util.Index()
         with open("worlds/minicraft/hints.yaml") as hint_f:
             hints = yaml.load(hint_f)
             for goal in hints:
                 _, arg = util.parse_fexp(goal)
                 assert arg in self.cookbook.index
-                hint = tuple(hints[goal])
+                hint = hints[goal]
+                hint = tuple(self.vocab.index(h) for h in hint)
                 task = MinicraftTask(arg, hint)
                 self.tasks.append(task)
 
@@ -80,6 +82,7 @@ class MinicraftWorld(object):
                 1
         self.n_act = N_ACTIONS
         self.n_tasks = len(self.tasks)
+        self.max_hint_len = 5
 
         self.non_grabbable_indices = self.cookbook.environment
         self.grabbable_indices = [i for i in range(self.cookbook.n_kinds)

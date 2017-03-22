@@ -39,9 +39,9 @@ ShurdlurnInstance = namedtuple("ShurdlurnInstance", ["task", "state"])
 class ShurdlurnWorld(object):
     def __init__(self, config):
         self.config = config
-        example_names = os.listdir(EXAMPLE_DIR)
+        example_names = os.listdir(EXAMPLE_DIR)[:10]
         tasks = []
-        index = util.Index()
+        self.vocab = util.Index()
         tokenizer = TreebankWordTokenizer()
         for name in example_names:
             if not name.endswith(".lisp"):
@@ -71,8 +71,8 @@ class ShurdlurnWorld(object):
                     except Exception as e:
                         logging.warn("unable to process utt from %s", name)
                         continue
-                    utt = tokenizer.tokenize(utt.lower())
-                    utt = tuple(index.index(tok) for tok in utt)
+                    utt = ["<s>"] + tokenizer.tokenize(utt.lower()) + ["</s>"]
+                    utt = tuple(self.vocab.index(tok) for tok in utt)
                     task = ShurdlurnTask(start, end, utt)
                     tasks.append(task)
 
@@ -86,6 +86,7 @@ class ShurdlurnWorld(object):
 
         self.max_width = max_width
         self.max_height = max_height
+        self.max_hint_len = max(len(t.hint) for t in tasks)
         self.n_kinds = n_kinds
         self.n_obs = max_width * max_height * n_kinds + max_width
         self.n_act = 2 + 1 + (n_kinds - 1)
