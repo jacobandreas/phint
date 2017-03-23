@@ -75,8 +75,8 @@ class ShurdlurnWorld(object):
                     except Exception as e:
                         logging.warn("unable to process utt from %s", name)
                         continue
-                    #utt = ["<s>"] + tokenizer.tokenize(utt.lower()) + ["</s>"]
-                    utt = [name + str(i_example)]
+                    utt = ["<s>"] + tokenizer.tokenize(utt.lower()) + ["</s>"]
+                    #utt = [name + str(i_example)]
                     utt = tuple(self.vocab.index(tok) for tok in utt)
                     task = ShurdlurnTask(start, end, utt)
                     tasks.append(task)
