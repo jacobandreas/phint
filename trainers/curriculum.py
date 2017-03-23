@@ -12,17 +12,28 @@ class CurriculumTrainer(object):
     def __init__(self, config):
         self.config = config
         self.session = tf.Session()
+        self.random = util.next_random()
+
+    #def _recompute_task_probs(self, world, counts, rewards, max_len):
+    #    probs = np.zeros(world.n_tasks)
+    #    max_reward = max(rewards[t] / (1 + counts[t]) for t in world.tasks)
+    #    for i, task in enumerate(world.tasks):
+    #        if len(task.hint) > max_len:
+    #            continue
+    #        probs[i] = 1 - rewards[task] / counts[task]
+    #        #probs[i] = (0.05 + max_reward) / (0.05 + rewards[task] / (1 + counts[task]))
+    #    if not probs.any():
+    #        return None
+    #    probs /= np.sum(probs)
+    #    return probs
 
     def _recompute_task_probs(self, world, counts, rewards, max_len):
         probs = np.zeros(world.n_tasks)
-        max_reward = max(rewards[t] / (1 + counts[t]) for t in world.tasks)
-        for i, task in enumerate(world.tasks):
-            if len(task.hint) > max_len:
-                continue
-            probs[i] = 1 - rewards[task] / counts[task]
-            #probs[i] = (0.05 + max_reward) / (0.05 + rewards[task] / (1 + counts[task]))
-        if not probs.any():
-            return None
+        indices = list(range(len(world.n_tasks)))
+        self.random.shuffle(indices)
+        indices = indices[:100]
+        for i in indices:
+            probs[i] = 1
         probs /= np.sum(probs)
         return probs
 
@@ -37,9 +48,9 @@ class CurriculumTrainer(object):
         err = 0
         #max_len = min(len(task.hint) for task in world.tasks)
         max_len = 100
-        #task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
-        #assert task_probs is not None
-        task_probs = None
+        task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
+        assert task_probs is not None
+        #task_probs = None
 
         model.save(self.session)
         while True:
@@ -81,7 +92,7 @@ class CurriculumTrainer(object):
                 if min(scores) > 0.8:
                     max_len += 1
                     model.save(self.session)
-                #task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
+                task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
                 #logging.info("[probs] %s", task_probs)
                 logging.info("[mean] %f" % np.mean(scores))
                 logging.info("")
