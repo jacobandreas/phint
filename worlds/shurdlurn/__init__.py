@@ -33,7 +33,7 @@ def listify(sexp):
         out.append((inner,))
     return tuple(out)
 
-ShurdlurnTask = namedtuple("ShurdlurnTask", ["start", "end", "hint"])
+ShurdlurnTask = namedtuple("ShurdlurnTask", ["start", "end", "hint", "id"])
 #ShurdlurnInstance = namedtuple("ShurdlurnInstance", ["task", "state"])
 class ShurdlurnInstance(object):
     def __init__(self, task, state):
@@ -43,14 +43,27 @@ class ShurdlurnInstance(object):
 class ShurdlurnWorld(object):
     def __init__(self, config):
         self.config = config
-        example_names = os.listdir(EXAMPLE_DIR)[:10]
-        tasks = []
+
+        with open(os.path.join(
+                EXAMPLE_DIR, config.world.train_fold + ".ids.txt")) as tr_id_f:
+            train_names = {s.strip() for s in tr_id_f}
+        with open(os.path.join(
+                EXAMPLE_DIR, config.world.test_fold + ".ids.txt")) as te_id_f:
+            test_names = {s.strip() for s in te_id_f}
+        self.train_ids = []
+        self.test_ids = []
+
+        example_names = os.listdir(EXAMPLE_DIR)
+        tasks = {}
         self.vocab = util.Index()
         tokenizer = TreebankWordTokenizer()
-        for name in example_names:
-            if not name.endswith(".lisp"):
+        for file_name in example_names:
+            if not file_name.endswith(".lisp"):
                 continue
-            with open(os.path.join(EXAMPLE_DIR, name)) as example_f:
+            name = file_name[:-5]
+            if not (name in train_names or name in test_names):
+                continue
+            with open(os.path.join(EXAMPLE_DIR, file_name)) as example_f:
                 try:
                     examples = sexpdata.parse(example_f.read())
                 except Exception as e:
@@ -78,31 +91,48 @@ class ShurdlurnWorld(object):
                     utt = ["<s>"] + tokenizer.tokenize(utt.lower()) + ["</s>"]
                     #utt = [name + str(i_example)]
                     utt = tuple(self.vocab.index(tok) for tok in utt)
-                    task = ShurdlurnTask(start, end, utt)
-                    tasks.append(task)
+                    t_id = (name, i_example)
+                    if name in train_names:
+                        self.train_ids.append(t_id)
+                    elif name in test_names:
+                        self.test_ids.append(t_id)
+                    else:
+                        assert False
+                    task = ShurdlurnTask(start, end, utt, t_id)
+                    tasks[t_id] = task
 
-        max_width = max(len(t.start) for t in tasks)
+        logging.info("loaded %d train utts from %d sessions", len(self.train_ids), len(train_names))
+        logging.info("loaded %d test utts from %d sessions", len(self.test_ids), len(test_names))
+
+        max_width = max(len(t.start) for t in tasks.values())
         max_height = max(
-                max(max(len(s) for s in t.start) for t in tasks),
-                max(max(len(s) for s in t.end) for t in tasks))
+                max(max(len(s) for s in t.start) for t in tasks.values()),
+                max(max(len(s) for s in t.end) for t in tasks.values()))
         n_kinds = 1 + max(
-                max(max(max(s) if len(s) > 0 else 0 for s in t.start) for t in tasks),
-                max(max(max(s) if len(s) > 0 else 0 for s in t.end) for t in tasks))
+                max(max(max(s) if len(s) > 0 else 0 for s in t.start) for t in tasks.values()),
+                max(max(max(s) if len(s) > 0 else 0 for s in t.end) for t in tasks.values()))
 
         self.max_width = max_width
         self.max_height = max_height
-        self.max_hint_len = max(len(t.hint) for t in tasks)
+        self.max_hint_len = max(len(t.hint) for t in tasks.values())
         self.n_kinds = n_kinds
         self.n_obs = max_width * max_height * (n_kinds + 1) + max_width
         self.n_act = 2 + 1 + n_kinds
         self.n_tasks = len(tasks)
-        self.tasks = tasks[:100]
+        self.tasks = tasks
         self.random = util.next_random()
 
-    def sample_instance(self, p=None):
-        assert p is None or len(p) == len(self.tasks)
-        i_task = self.random.choice(len(self.tasks), p=p)
-        task = self.tasks[i_task]
+    def sample_train(self, p=None):
+        return self.sample_instance(self.train_ids, p)
+
+    def sample_test(self):
+        return self.sample_instance(self.test_ids)
+
+    def sample_instance(self, fold, p):
+        assert p is None or len(p) == len(fold)
+        idx_task = self.random.choice(len(fold), p=p)
+        id_task = fold[idx_task]
+        task = self.tasks[id_task]
         init_state = ShurdlurnState(0, task.start, task.end, self.max_width, self.max_height, self.n_kinds)
         return ShurdlurnInstance(task, init_state)
 
@@ -123,12 +153,6 @@ class ShurdlurnWorld(object):
 
     def complete(self, insts):
         return [0] * len(insts)
-        #rewards = []
-        #for t in insts:
-        #    assert t.state.goal == t.task.end
-        #    r = 1 if t.state.blocks == t.state.goal else 0
-        #    rewards.append(r)
-        #return rewards
 
 class ShurdlurnState(object):
     def __init__(self, agent_x, blocks, goal, max_width, max_height, n_kinds):

@@ -39,11 +39,11 @@ class CurriculumTrainer(object):
         max_len = 100
         #task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
         #assert task_probs is not None
-        task_probs = [1. / len(world.tasks) for _ in world.tasks]
+        task_probs = None
 
         model.save(self.session)
         while True:
-            inst = [world.sample_instance(task_probs) for _ in range(n_batch)]
+            inst = [world.sample_train(task_probs) for _ in range(n_batch)]
             buf, total_reward = self.do_rollout(world, inst, model, n_batch)
             i_rollout += self.config.trainer.n_rollout_batch
             objective.experience(buf)
@@ -72,8 +72,10 @@ class CurriculumTrainer(object):
                 for hint in sorted(counts.keys()):
                     score = rewards[hint] / counts[hint]
                     scores.append(score)
-                    logging.info("[reward %s] %f (%d)", util.pp_sexp(hint), 
-                            score, counts[hint])
+                    if self.config.trainer.log_each_task:
+                        logging.info(
+                                "[reward %s] %f (%d)",
+                                util.pp_sexp(hint), score, counts[hint])
                 for i_ex, ex in enumerate(examples):
                     logging.info("[rollout %d] %s" % (i_ex, ex))
                 if min(scores) > 0.8:
