@@ -119,6 +119,8 @@ class ShurdlurnWorld(object):
         self.n_obs = max_width * max_height * (n_kinds + 1) + max_width
         self.n_act = 2 + 1 + n_kinds
         self.n_tasks = len(tasks)
+        self.n_train = len(self.train_ids)
+        self.n_test = len(self.test_ids)
         self.tasks = tasks
         self.random = util.next_random()
 
