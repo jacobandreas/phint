@@ -79,7 +79,8 @@ class ReprModel(object):
     def act(self, obs, mstate, task, session):
         n_obs = len(obs)
         action_p, = session.run([self.t_action_param], self.feed(obs, mstate))
-        action, ret, stop = self.action_dist.sample(action_p, None, None)
+        action, ret, _ = self.action_dist.sample(action_p, None, None)
+        stop = [False] * n_obs
         return zip(action, ret), stop, mstate, [0]*n_obs
 
     def save(self, session):

@@ -11,7 +11,7 @@ model:
   intrinsic_bonus: 0
   actor:
     type: discrete
-    n_hidden: [128]
+    n_hidden: [128, 128]
     ret_bias: -3
   controller:
     type: att
@@ -24,8 +24,8 @@ model:
 
 objective:
   discount: 0.9
-  entropy_bonus: 0.001
-  step_size: 0.0001
+  entropy_bonus: 0.01
+  step_size: 0.001
   n_train_batch: 2000
 
 trainer: 

@@ -55,7 +55,7 @@ class ShurdlurnWorld(object):
                     examples = sexpdata.parse(example_f.read())
                 except Exception as e:
                     logging.warn("unable to parse %s", name)
-                for example in examples:
+                for i_example, example in enumerate(examples):
                     try:
                         start_outer = example[2][2]
                         end_outer = example[7]
@@ -75,7 +75,8 @@ class ShurdlurnWorld(object):
                     except Exception as e:
                         logging.warn("unable to process utt from %s", name)
                         continue
-                    utt = ["<s>"] + tokenizer.tokenize(utt.lower()) + ["</s>"]
+                    #utt = ["<s>"] + tokenizer.tokenize(utt.lower()) + ["</s>"]
+                    utt = [name + str(i_example)]
                     utt = tuple(self.vocab.index(tok) for tok in utt)
                     task = ShurdlurnTask(start, end, utt)
                     tasks.append(task)
@@ -95,7 +96,7 @@ class ShurdlurnWorld(object):
         self.n_obs = max_width * max_height * (n_kinds + 1) + max_width
         self.n_act = 2 + 1 + n_kinds
         self.n_tasks = len(tasks)
-        self.tasks = tasks[:10]
+        self.tasks = tasks[:100]
         self.random = util.next_random()
 
     def sample_instance(self, p=None):
