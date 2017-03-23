@@ -29,7 +29,7 @@ class CurriculumTrainer(object):
 
     def _recompute_task_probs(self, world, counts, rewards, max_len):
         probs = np.zeros(world.n_tasks)
-        indices = list(range(len(world.n_tasks)))
+        indices = list(range(world.n_tasks))
         self.random.shuffle(indices)
         indices = indices[:100]
         for i in indices:
