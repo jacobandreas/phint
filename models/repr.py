@@ -34,10 +34,12 @@ class EmbeddingController(object):
 class Actor(object):
     def __init__(self, config, t_obs, t_repr, world, guide):
         prev_layer = tf.concat((t_obs, t_repr), axis=1)
-        widths = config.model.actor.n_hidden + [world.n_act + 2]
+        #widths = config.model.actor.n_hidden + [world.n_act + 2]
+        widths = config.model.actor.n_hidden + [world.n_act]
         activations = [tf.nn.tanh] * (len(widths) - 1) + [None]
         with tf.variable_scope("actor") as scope:
-            bias = np.zeros((1, world.n_act + 2), dtype=np.float32)
+            #bias = np.zeros((1, world.n_act + 2), dtype=np.float32)
+            bias = np.zeros((1, world.n_act), dtype=np.float32)
             bias[0, -2:] = config.model.actor.ret_bias
             t_bias = tf.constant(bias)
             self.t_action_param = _mlp(prev_layer, widths, activations) + t_bias
