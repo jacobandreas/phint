@@ -56,6 +56,7 @@ class ShurdlurnWorld(object):
         example_names = os.listdir(EXAMPLE_DIR)
         tasks = {}
         self.vocab = util.Index()
+        self.task_index = util.Index()
         tokenizer = TreebankWordTokenizer()
         for file_name in example_names:
             if not file_name.endswith(".lisp"):
@@ -91,7 +92,7 @@ class ShurdlurnWorld(object):
                     utt = ["<s>"] + tokenizer.tokenize(utt.lower()) + ["</s>"]
                     #utt = [name + str(i_example)]
                     utt = tuple(self.vocab.index(tok) for tok in utt)
-                    t_id = (name, i_example)
+                    t_id = self.task_index.index((name, i_example))
                     if name in train_names:
                         self.train_ids.append(t_id)
                     elif name in test_names:
@@ -127,8 +128,8 @@ class ShurdlurnWorld(object):
     def sample_train(self, p=None):
         return self.sample_instance(self.train_ids, p)
 
-    def sample_test(self):
-        return self.sample_instance(self.test_ids)
+    def sample_test(self, p=None):
+        return self.sample_instance(self.test_ids, p)
 
     def sample_instance(self, fold, p):
         assert p is None or len(p) == len(fold)

@@ -8,10 +8,38 @@ import numpy as np
 import time
 import tensorflow as tf
 
+def _do_rollout(config, world, task, model, n_batch, session, intrinsic=False):
+    obs = world.reset(task)
+    mstate = model.init(task, obs)
+    stop = [False] * n_batch
+    buf = [[] for _ in range(n_batch)]
+    total_reward = np.zeros(n_batch)
+    while max(len(b) for b in buf) < config.trainer.max_rollout_len and not all(stop):
+        action, agent_stop, mstate_, intrinsic_rew = model.act(
+                obs, mstate, task, session)
+        world_action, _  = zip(*action)
+        obs_, world_rew, world_stop = world.step(world_action, task)
+        rew = np.asarray(world_rew) 
+        if intrinsic:
+            rew += config.model.intrinsic_bonus * np.asarray(intrinsic_rew)
+        complete_rew = world.complete(task)
+        for i in range(n_batch):
+            if not stop[i]:
+                rew_here = rew[i]
+                if agent_stop[i]:
+                    rew_here += complete_rew[i]
+                total_reward[i] += rew_here
+                buf[i].append(Transition(obs[i], mstate[i], action[i],
+                    obs_[i], mstate_[i], rew_here))
+                stop[i] = stop[i] or agent_stop[i] or world_stop[i]
+        obs = obs_
+        mstate = mstate_
+    return buf, total_reward
+
 class CurriculumTrainer(object):
-    def __init__(self, config):
+    def __init__(self, config, session):
         self.config = config
-        self.session = tf.Session()
+        self.session = session
         self.random = util.next_random()
 
     #def _recompute_task_probs(self, world, counts, rewards, max_len):
@@ -55,7 +83,7 @@ class CurriculumTrainer(object):
         model.save(self.session)
         while True:
             inst = [world.sample_train(task_probs) for _ in range(n_batch)]
-            buf, total_reward = self.do_rollout(world, inst, model, n_batch)
+            buf, total_reward = _do_rollout(self.config, world, inst, model, n_batch, self.session, intrinsic=True)
             i_rollout += self.config.trainer.n_rollout_batch
             objective.experience(buf)
             for it, r in zip(inst, total_reward):
@@ -70,7 +98,8 @@ class CurriculumTrainer(object):
 
             examples = [[t.a for t in b] for b in buf[:3]]
             examples = [" ".join(
-                    [str(a) if r == 0 else str(a) + " _" for a, r in e]) 
+                    [str(a) for a, r in e]) 
+                    #[str(a) if r == 0 else str(a) + " _" for a, r in e]) 
                 for e in examples]
 
             n_update = self.config.trainer.n_update
@@ -91,7 +120,7 @@ class CurriculumTrainer(object):
                     logging.info("[rollout %d] %s" % (i_ex, ex))
                 if min(scores) > 0.8:
                     max_len += 1
-                    model.save(self.session)
+                model.save(self.session)
                 task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
                 #logging.info("[probs] %s", task_probs)
                 logging.info("[mean] %f" % np.mean(scores))
@@ -99,29 +128,3 @@ class CurriculumTrainer(object):
                 counts = defaultdict(lambda: 1.)
                 rewards = defaultdict(lambda: 0.)
                 err = 0
-
-    def do_rollout(self, world, task, model, n_batch):
-        obs = world.reset(task)
-        mstate = model.init(task, obs)
-        stop = [False] * n_batch
-        buf = [[] for _ in range(n_batch)]
-        total_reward = np.zeros(n_batch)
-        while max(len(b) for b in buf) < self.config.trainer.max_rollout_len and not all(stop):
-            action, agent_stop, mstate_, intrinsic_rew = model.act(
-                    obs, mstate, task, self.session)
-            world_action, _  = zip(*action)
-            obs_, world_rew, world_stop = world.step(world_action, task)
-            rew = np.asarray(world_rew) + self.config.model.intrinsic_bonus * np.asarray(intrinsic_rew)
-            complete_rew = world.complete(task)
-            for i in range(n_batch):
-                if not stop[i]:
-                    rew_here = rew[i]
-                    if agent_stop[i]:
-                        rew_here += complete_rew[i]
-                    total_reward[i] += rew_here
-                    buf[i].append(Transition(obs[i], mstate[i], action[i],
-                        obs_[i], mstate_[i], rew_here))
-                    stop[i] = stop[i] or agent_stop[i] or world_stop[i]
-            obs = obs_
-            mstate = mstate_
-        return buf, total_reward

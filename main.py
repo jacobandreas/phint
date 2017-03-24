@@ -5,12 +5,15 @@ import models
 from objectives.reinforce import Reinforce
 from objectives.ppo import Ppo
 import trainers
+from evaluators.zero_shot import ZeroShotEvaluator
+from evaluators.adaptation import AdaptationEvaluator
 
 import logging
 import numpy as np
 import os
 import random
 import sys
+import tensorflow as tf
 import traceback
 import yaml
 
@@ -21,8 +24,19 @@ def main():
     model = models.load(config, world, guide)
     #objective = Ppo(config, model)
     objective = Reinforce(config, model)
-    trainer = trainers.load(config)
-    trainer.train(world, model, objective)
+
+    session = tf.Session()
+
+    if config.train:
+        trainer = trainers.load(config, session)
+        trainer.train(world, model, objective)
+
+    if config.eval:
+        #zs_evaluator = ZeroShotEvaluator(config, session)
+        #zs_evaluator.evaluate(world, model)
+
+        ad_evaluator = AdaptationEvaluator(config, session)
+        ad_evaluator.evaluate(world, model, objective)
 
 def configure():
     # load config
