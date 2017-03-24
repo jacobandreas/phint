@@ -34,10 +34,11 @@ model:
     #use_task: true
   critic:
     type: linear
+    by_task: true
 
 objective:
   discount: 0.9
-  entropy_bonus: 0.03
+  entropy_bonus: 0.01
   step_size: 0.001
   n_train_batch: 2000
 

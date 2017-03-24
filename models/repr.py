@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 import os
 
-ControllerState = namedtuple("ControllerState", ["task_id", "hint"])
+ModelState = namedtuple("ModelState", ["task_id", "hint"])
 
 class EmbeddingController(object):
     def __init__(self, config, t_obs, world, guide):
@@ -40,7 +40,7 @@ class EmbeddingController(object):
             self.t_repr = tf.zeros_like(t_task_repr)
 
     def init(self, inst, obs):
-        return [ControllerState(i.task.id, self.guide.guide_for(i.task)) for i in inst]
+        return [ModelState(i.task.id, self.guide.guide_for(i.task)) for i in inst]
 
     def feed(self, state):
         return {
@@ -64,8 +64,12 @@ class Actor(object):
             self.params = util.vars_in_scope
 
 class Critic(object):
-    def __init__(self, config, t_obs, t_repr, world, guide):
-        self.t_value = tf.squeeze(_linear(t_obs, 1))
+    def __init__(self, config, t_obs, t_repr, t_task, world, guide):
+        if config.model.critic.by_task:
+            self.t_weight = _embed(t_task, guide.n_tasks, world.n_obs)
+            self.t_value = tf.reduce_sum(self.t_weight * t_obs, axis=1)
+        else:
+            self.t_value = tf.squeeze(_linear(t_obs, 1))
 
 class ReprModel(object):
     def __init__(self, config, world, guide):
@@ -80,7 +84,7 @@ class ReprModel(object):
         self.t_obs = tf.placeholder(tf.float32, (None, world.n_obs))
         self.controller = EmbeddingController(config, self.t_obs, world, guide)
         self.actor = Actor(config, self.t_obs, self.controller.t_repr, world, guide)
-        self.critic = Critic(config, self.t_obs, self.controller.t_repr, world, guide)
+        self.critic = Critic(config, self.t_obs, self.controller.t_repr, self.controller.t_task, world, guide)
         self.t_action_param = self.actor.t_action_param
         self.t_action_bias = 0
         self.t_action_temp = 0
