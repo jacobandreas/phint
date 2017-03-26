@@ -42,12 +42,12 @@ class EmbeddingController(object):
     def init(self, inst, obs):
         return [ModelState(i.task.id, self.guide.guide_for(i.task)) for i in inst]
 
-    #def feed(self, state):
-    #    return {
-    #        self.t_hint: [s.hint + (0,)*(self.guide.max_len-len(s.hint)) for s in state],
-    #        #self.t_task: [s.task_id for s in state],
-    #        self.t_len: [len(s.hint) for i in state]
-    #    }
+    def feed(self, state):
+        return {
+            self.t_hint: [s.hint + (0,)*(self.guide.max_len-len(s.hint)) for s in state],
+            #self.t_task: [s.task_id for s in state],
+            self.t_len: [len(s.hint) for i in state]
+        }
 
 class Actor(object):
     def __init__(self, config, t_obs, t_repr, world, guide):
@@ -103,11 +103,12 @@ class ReprModel(object):
         return self.controller.init(task, obs)
 
     def feed(self, obs, mstate):
-        return {
+        out = {
             self.t_obs: obs,
             self.t_task: [s.task_id for s in mstate]
         }
-        #out.update(self.controller.feed(mstate))
+        out.update(self.controller.feed(mstate))
+        return out
 
     def act(self, obs, mstate, task, session):
         n_obs = len(obs)
