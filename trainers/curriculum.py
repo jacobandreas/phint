@@ -123,12 +123,13 @@ class CurriculumTrainer(object):
                 if min(scores) > 0.8:
                     max_len += 1
                 model.save(self.session)
-                if (i_iter % (n_update * self.config.trainer.resample_every) == 0
-                        or i_iter > self.config.trainer.switch_iter):
-                    task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
                 #logging.info("[probs] %s", task_probs)
                 logging.info("[mean] %f" % np.mean(scores))
                 logging.info("")
                 counts = defaultdict(lambda: 1.)
                 rewards = defaultdict(lambda: 0.)
                 err = 0
+
+            if (i_iter % (n_update * self.config.trainer.resample_every) == 0
+                    or i_iter > self.config.trainer.switch_iter):
+                task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
