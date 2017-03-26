@@ -104,8 +104,8 @@ class ShurdlurnWorld(object):
                     task = ShurdlurnTask(start, end, utt, t_id)
                     tasks[t_id] = task
 
-        #self.train_ids = self.train_ids[:100]
-        #self.test_ids = self.test_ids[:100]
+        self.train_ids = self.train_ids[:100]
+        self.test_ids = self.test_ids[:100]
 
         logging.info("loaded %d train utts from %d sessions", len(self.train_ids), len(train_names))
         logging.info("loaded %d test utts from %d sessions", len(self.test_ids), len(test_names))

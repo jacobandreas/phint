@@ -15,7 +15,7 @@ class DiscreteDist(object):
         prob /= prob.sum(axis=1, keepdims=True)
         #print prob[0, :]
         #print "temp", temp
-        actions = [self.random.choice(len(row), p=row) for row in prob]
+        actions = [self.random.choice(len(row), p=(row/np.sum(row))) for row in prob]
         n_actions = prob.shape[1]
         rets = [action == n_actions - 2 for action in actions]
         stops = [action == n_actions - 1 for action in actions]
