@@ -28,10 +28,10 @@ model:
     update: discrete
     gumbel: true
 
-    use_ling: true
-    use_task: false
-    #use_ling: false
-    #use_task: true
+    #use_ling: true
+    #use_task: false
+    use_ling: false
+    use_task: true
   critic:
     type: linear
     by_task: true
@@ -40,7 +40,7 @@ objective:
   discount: 0.9
   entropy_bonus: 0.01
   step_size: 0.001
-  n_train_batch: 2000
+  n_train_batch: 4000
 
 trainer: 
   name: CurriculumTrainer
@@ -49,3 +49,10 @@ trainer:
   n_rollout_batch: 100
   parallel: 4
   log_each_task: false
+
+#trainer:
+#  name: RlLabTrainer
+#  #algo: TRPO
+#  algo: VPG
+#  max_rollout_len: 100
+#  n_iters: 10000

@@ -11,12 +11,12 @@ import os
 ModelState = namedtuple("ModelState", ["task_id", "hint"])
 
 class EmbeddingController(object):
-    def __init__(self, config, t_obs, world, guide):
+    def __init__(self, config, t_obs, t_task, world, guide):
         self.guide = guide
 
         self.t_hint = tf.placeholder(tf.int32, shape=(None, guide.max_len))
         self.t_len = tf.placeholder(tf.int32, shape=(None,))
-        self.t_task = tf.placeholder(tf.int32, shape=(None,))
+        #self.t_task = tf.placeholder(tf.int32, shape=(None,))
 
         with tf.variable_scope("ling_repr"):
             t_embed = _embed(self.t_hint, guide.n_vocab, config.model.controller.n_embed)
@@ -26,7 +26,7 @@ class EmbeddingController(object):
 
         with tf.variable_scope("task_repr"):
             t_task_repr = _embed(
-                    self.t_task, guide.n_tasks, config.model.controller.n_hidden)
+                    t_task, guide.n_tasks, config.model.controller.n_hidden)
 
         use_ling = config.model.controller.use_ling
         use_task = config.model.controller.use_task
@@ -42,16 +42,17 @@ class EmbeddingController(object):
     def init(self, inst, obs):
         return [ModelState(i.task.id, self.guide.guide_for(i.task)) for i in inst]
 
-    def feed(self, state):
-        return {
-            self.t_hint: [s.hint + (0,)*(self.guide.max_len-len(s.hint)) for s in state],
-            self.t_task: [s.task_id for s in state],
-            self.t_len: [len(s.hint) for i in state]
-        }
+    #def feed(self, state):
+    #    return {
+    #        self.t_hint: [s.hint + (0,)*(self.guide.max_len-len(s.hint)) for s in state],
+    #        #self.t_task: [s.task_id for s in state],
+    #        self.t_len: [len(s.hint) for i in state]
+    #    }
 
 class Actor(object):
     def __init__(self, config, t_obs, t_repr, world, guide):
         prev_layer = tf.concat((t_obs, t_repr), axis=1)
+        #prev_layer = t_obs
         #widths = config.model.actor.n_hidden + [world.n_act + 2]
         widths = config.model.actor.n_hidden + [world.n_act]
         activations = [tf.nn.tanh] * (len(widths) - 1) + [None]
@@ -61,15 +62,13 @@ class Actor(object):
             bias[0, -2:] = config.model.actor.ret_bias
             t_bias = tf.constant(bias)
             self.t_action_param = _mlp(prev_layer, widths, activations) + t_bias
-            self.params = util.vars_in_scope
 
 class Critic(object):
     def __init__(self, config, t_obs, t_repr, t_task, world, guide):
+        self.t_value = tf.squeeze(_linear(t_obs, 1))
         if config.model.critic.by_task:
-            self.t_weight = _embed(t_task, guide.n_tasks, world.n_obs)
-            self.t_value = tf.reduce_sum(self.t_weight * t_obs, axis=1)
-        else:
-            self.t_value = tf.squeeze(_linear(t_obs, 1))
+            self.t_task_weight = _embed(t_task, guide.n_tasks, world.n_obs)
+            self.t_value += tf.reduce_sum(self.t_task_weight * t_obs, axis=1)
 
 class ReprModel(object):
     def __init__(self, config, world, guide):
@@ -77,28 +76,38 @@ class ReprModel(object):
         self.guide = guide
         self.config = config
         self.prepare(config, world, guide)
-        self.saver = tf.train.Saver()
         self.action_dist = DiscreteDist()
+        self.saver = tf.train.Saver()
 
     def prepare(self, config, world, guide):
-        self.t_obs = tf.placeholder(tf.float32, (None, world.n_obs))
-        self.controller = EmbeddingController(config, self.t_obs, world, guide)
-        self.actor = Actor(config, self.t_obs, self.controller.t_repr, world, guide)
-        self.critic = Critic(config, self.t_obs, self.controller.t_repr, self.controller.t_task, world, guide)
+        self.t_obs = tf.placeholder(tf.float32, shape=(None, world.n_obs))
+        self.t_task = tf.placeholder(tf.int32, shape=(None,))
+        with tf.variable_scope("ReprModel") as scope:
+            self.controller = EmbeddingController(config, self.t_obs, self.t_task, world, guide)
+            self.actor = Actor(config, self.t_obs, self.controller.t_repr, world, guide)
+            self.critic = Critic(config, self.t_obs, self.controller.t_repr, self.t_task, world, guide)
+            self.params = util.vars_in_scope(scope)
         self.t_action_param = self.actor.t_action_param
         self.t_action_bias = 0
         self.t_action_temp = 0
         self.t_baseline = self.critic.t_value
 
+    def prepare_sym(self, obs_var, task_id_var):
+        with tf.variable_scope("ReprModel", reuse=True) as scope:
+            controller = EmbeddingController(self.config, obs_var, task_id_var, self.world, self.guide)
+            actor = Actor(self.config, obs_var, controller.t_repr, self.world, self.guide)
+        return tf.nn.softmax(actor.t_action_param)
+
+
     def init(self, task, obs):
-        controller_state = self.controller.init(task, obs)
-        return controller_state
+        return self.controller.init(task, obs)
 
     def feed(self, obs, mstate):
-        controller_state = mstate
-        out = {self.t_obs: obs}
-        out.update(self.controller.feed(controller_state))
-        return out
+        return {
+            self.t_obs: obs,
+            self.t_task: [s.task_id for s in mstate]
+        }
+        #out.update(self.controller.feed(mstate))
 
     def act(self, obs, mstate, task, session):
         n_obs = len(obs)
@@ -106,6 +115,11 @@ class ReprModel(object):
         action, ret, _ = self.action_dist.sample(action_p, None, None)
         stop = [False] * n_obs
         return zip(action, ret), stop, mstate, [0]*n_obs
+
+    def get_action_param(self, obs, mstate, task, session):
+        n_obs = len(obs)
+        action_p, rep = session.run([self.t_action_param, self.controller.t_repr], self.feed(obs, mstate))
+        return action_p
 
     def save(self, session):
         self.saver.save(session, os.path.join(self.config.experiment_dir, "repr.chk"))

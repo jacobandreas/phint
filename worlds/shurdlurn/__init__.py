@@ -89,6 +89,8 @@ class ShurdlurnWorld(object):
                     except Exception as e:
                         logging.warn("unable to process utt from %s", name)
                         continue
+                    if start == end:
+                        continue
                     utt = ["<s>"] + tokenizer.tokenize(utt.lower()) + ["</s>"]
                     #utt = [name + str(i_example)]
                     utt = tuple(self.vocab.index(tok) for tok in utt)
@@ -159,6 +161,7 @@ class ShurdlurnWorld(object):
 
     def complete(self, insts):
         return [0] * len(insts)
+        #return [1 if i.state.blocks == i.state.goal else 0 for i in insts]
 
 class ShurdlurnState(object):
     def __init__(self, agent_x, blocks, goal, max_width, max_height, n_kinds):

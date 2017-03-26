@@ -83,6 +83,7 @@ class CurriculumTrainer(object):
         model.save(self.session)
         while True:
             inst = [world.sample_train(task_probs) for _ in range(n_batch)]
+            inits = [str(i.state.blocks) + " " + str(i.state.goal) for i in inst]
             buf, total_reward = _do_rollout(self.config, world, inst, model, n_batch, self.session, intrinsic=True)
             i_rollout += self.config.trainer.n_rollout_batch
             objective.experience(buf)
@@ -118,10 +119,12 @@ class CurriculumTrainer(object):
                                 util.pp_sexp(hint), score, counts[hint])
                 for i_ex, ex in enumerate(examples):
                     logging.info("[rollout %d] %s" % (i_ex, ex))
+                    logging.info("[goal %d] %s" % (i_ex, inits[i_ex]))
                 if min(scores) > 0.8:
                     max_len += 1
                 model.save(self.session)
-                task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
+                if i_iter % (n_update * 10) == 0:
+                    task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
                 #logging.info("[probs] %s", task_probs)
                 logging.info("[mean] %f" % np.mean(scores))
                 logging.info("")
