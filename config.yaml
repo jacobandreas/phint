@@ -30,7 +30,7 @@ model:
 
     #use_ling: true
     #use_task: false
-    use_ling: true
+    use_ling: false
     use_task: true
   critic:
     type: linear
@@ -49,6 +49,8 @@ trainer:
   n_rollout_batch: 100
   parallel: 4
   log_each_task: false
+  resample_every: 5
+  switch_iter: 10000
 
 #trainer:
 #  name: RlLabTrainer
