@@ -50,7 +50,7 @@ trainer:
   parallel: 4
   log_each_task: false
   resample_every: 5
-  switch_iter: 10000
+  switch_iter: 20000
 
 #trainer:
 #  name: RlLabTrainer
