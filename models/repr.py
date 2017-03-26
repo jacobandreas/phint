@@ -14,7 +14,7 @@ class EmbeddingController(object):
     def __init__(self, config, t_obs, t_task, world, guide):
         self.guide = guide
 
-        self.t_hint = tf.placeholder(tf.int32, shape=(None, guide.max_len))
+        self.t_hint = tf.placeholder(tf.int32, shape=(None, None))
         self.t_len = tf.placeholder(tf.int32, shape=(None,))
         #self.t_task = tf.placeholder(tf.int32, shape=(None,))
 
@@ -43,8 +43,9 @@ class EmbeddingController(object):
         return [ModelState(i.task.id, self.guide.guide_for(i.task)) for i in inst]
 
     def feed(self, state):
+        max_len = max(len(s.hint) for s in state)
         return {
-            self.t_hint: [s.hint + (0,)*(self.guide.max_len-len(s.hint)) for s in state],
+            self.t_hint: [s.hint + (0,)*(max_len-len(s.hint)) for s in state],
             #self.t_task: [s.task_id for s in state],
             self.t_len: [len(s.hint) for i in state]
         }
