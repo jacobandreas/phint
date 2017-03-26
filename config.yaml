@@ -31,7 +31,7 @@ model:
     #use_ling: true
     #use_task: false
     use_ling: true
-    use_task: false
+    use_task: true
   critic:
     type: linear
     by_task: true
