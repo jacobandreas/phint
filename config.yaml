@@ -30,9 +30,7 @@ model:
     update: discrete
     gumbel: true
 
-    #use_ling: true
-    #use_task: false
-    use_ling: false
+    use_ling: true
     use_task: true
   critic:
     type: linear
