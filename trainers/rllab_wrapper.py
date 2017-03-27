@@ -23,6 +23,7 @@ import sys
 
 class RllEnvWrapper(RllEnv):
     def __init__(self, underlying):
+        print "CONSTRUCTOR"
         self.underlying = underlying
         self.active_instance = None
         super(RllEnvWrapper, self).__init__()
@@ -38,8 +39,13 @@ class RllEnvWrapper(RllEnv):
 
     def reset(self):
         #print >>sys.stderr, ""
+        if self.active_instance is not None:
+            print "reset inst with step", self.active_instance.step
         self.active_instance = self.underlying.sample_train()
         obs = self.underlying.reset([self.active_instance])[0]
+        #print self.active_instance.state
+        #print self.active_instance.state.blocks
+        #print self.active_instance.state.goal
         return obs
 
     def step(self, action):
@@ -107,8 +113,8 @@ class RlLabTrainer(object):
 
     def train(self, world, model, objective):
         env = TfEnv(RllEnvWrapper(world))
-        policy = RllPolicyWrapper(model, env.spec, env._wrapped_env)
-        #policy = CategoricalMLPPolicy("policy", env.spec)
+        #policy = RllPolicyWrapper(model, env.spec, env._wrapped_env)
+        policy = CategoricalMLPPolicy("policy", env.spec)
         baseline = LinearFeatureBaseline(env.spec)
         #baseline=RllBaselineWrapper(model),
 

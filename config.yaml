@@ -39,7 +39,7 @@ model:
 objective:
   discount: 0.9
   entropy_bonus: 0.01
-  step_size: 0.001
+  step_size: 0 #0.001
   n_train_batch: 4000
 
 trainer: 
@@ -50,7 +50,7 @@ trainer:
   parallel: 4
   log_each_task: false
   resample_every: 5
-  switch_iter: 20000
+  switch_iter: 10000
 
 #trainer:
 #  name: RlLabTrainer

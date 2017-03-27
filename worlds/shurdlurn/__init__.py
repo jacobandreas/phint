@@ -39,6 +39,7 @@ class ShurdlurnInstance(object):
     def __init__(self, task, state):
         self.task = task
         self.state = state
+        self.step = 0
 
 class ShurdlurnWorld(object):
     def __init__(self, config):
@@ -104,8 +105,8 @@ class ShurdlurnWorld(object):
                     task = ShurdlurnTask(start, end, utt, t_id)
                     tasks[t_id] = task
 
-        #self.train_ids = self.train_ids[:100]
-        #self.test_ids = self.test_ids[:100]
+        #self.train_ids = self.train_ids[6:7]
+        #self.test_ids = self.test_ids[:10]
 
         logging.info("loaded %d train utts from %d sessions", len(self.train_ids), len(train_names))
         logging.info("loaded %d test utts from %d sessions", len(self.test_ids), len(test_names))
@@ -154,6 +155,7 @@ class ShurdlurnWorld(object):
         for a, t in zip(actions, insts):
             reward, nstate, stop = t.state.step(a)
             t.state = nstate
+            t.step = t.step + 1
             features.append(nstate.features())
             rewards.append(reward)
             stops.append(stop)
