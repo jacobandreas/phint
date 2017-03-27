@@ -10,6 +10,8 @@ world:
   name: ShurdlurnWorld
   train_fold: train
   test_fold: val
+  n_train: 1000
+  n_test: 1000
 
 guide:
   name: SketchGuide
