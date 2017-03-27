@@ -41,7 +41,7 @@ model:
 objective:
   discount: 0.9
   entropy_bonus: 0.01
-  step_size: 0 #0.001
+  step_size: 0.001
   n_train_batch: 4000
 
 trainer: 

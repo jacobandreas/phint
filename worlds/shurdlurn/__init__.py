@@ -105,9 +105,9 @@ class ShurdlurnWorld(object):
                     task = ShurdlurnTask(start, end, utt, t_id)
                     tasks[t_id] = task
 
-        if hasattr(self.config.world.n_train):
+        if hasattr(self.config.world, "n_train"):
             self.train_ids = self.train_ids[:self.config.world.n_train]
-        if hasattr(self.config.world.n_test):
+        if hasattr(self.config.world, "n_test"):
             self.test_ids = self.test_ids[:self.config.world.n_test]
         #self.train_ids = self.train_ids[6:7]
         #self.test_ids = self.test_ids[:10]
