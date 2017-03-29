@@ -28,16 +28,29 @@ class EmbeddingController(object):
             t_task_repr = _embed(
                     t_task, guide.n_tasks, config.model.controller.n_hidden)
 
-        use_ling = config.model.controller.use_ling
-        use_task = config.model.controller.use_task
-        if use_ling and use_task:
+        param_ling = config.model.controller.param_ling
+        param_task = config.model.controller.param_task
+        if param_ling and param_task:
             self.t_repr = t_ling_repr + t_task_repr
-        elif use_ling:
+        elif param_ling:
             self.t_repr = t_ling_repr
-        elif use_task:
+        elif param_task:
             self.t_repr = t_task_repr
         else:
             self.t_repr = tf.zeros_like(t_task_repr)
+        self.t_ling_repr = t_ling_repr
+
+        with tf.variable_scope("ling_decoder"):
+            cell = tf.contrib.rnn.GRUCell(config.model.controller.n_hidden)
+            cell = tf.contrib.rnn.OutputProjectionWrapper(cell, guide.n_vocab)
+            t_dec_embed = t_embed[:, :-1, :]
+            t_dec_target = self.t_hint[:, 1:]
+            t_dec_pred, _ = tf.nn.dynamic_rnn(cell, t_dec_embed, initial_state=self.t_repr)
+            self.t_dec_loss = tf.reduce_mean(
+                    tf.nn.sparse_softmax_cross_entropy_with_logits(
+                        labels=t_dec_target,
+                        logits=t_dec_pred),
+                    axis=1)
 
     def init(self, inst, obs):
         return [ModelState(i.task.id, self.guide.guide_for(i.task)) for i in inst]
@@ -92,6 +105,15 @@ class ReprModel(object):
         self.t_action_bias = 0
         self.t_action_temp = 0
         self.t_baseline = self.critic.t_value
+
+        self.t_loss_extra = 0
+        enc_ling = self.config.model.controller.encode_ling
+        dec_ling = self.config.model.controller.decode_ling
+        if enc_ling > 0:
+            self.t_loss_extra += tf.reduce_mean(enc_ling * 
+                tf.nn.l2_loss(self.controller.t_repr - self.controller.t_ling_repr))
+        if dec_ling > 0:
+            self.t_loss_extra += tf.reduce_mean(dec_ling * self.controller.t_dec_loss)
 
     def prepare_sym(self, obs_var, task_id_var):
         with tf.variable_scope("ReprModel", reuse=True) as scope:

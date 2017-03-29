@@ -20,10 +20,9 @@ import tensorflow as tf
 
 import sys
 
-
 class RllEnvWrapper(RllEnv):
     def __init__(self, underlying):
-        print "CONSTRUCTOR"
+        #print "CONSTRUCTOR"
         self.underlying = underlying
         self.active_instance = None
         super(RllEnvWrapper, self).__init__()
@@ -39,8 +38,10 @@ class RllEnvWrapper(RllEnv):
 
     def reset(self):
         #print >>sys.stderr, ""
-        if self.active_instance is not None:
-            print "reset inst with step", self.active_instance.step
+        #if self.active_instance is not None:
+        #    print "reset inst" #, self.active_instance.step
+        #    print self.active_instance.state.blocks
+
         self.active_instance = self.underlying.sample_train()
         obs = self.underlying.reset([self.active_instance])[0]
         #print self.active_instance.state
@@ -49,9 +50,12 @@ class RllEnvWrapper(RllEnv):
         return obs
 
     def step(self, action):
+        #print "before", self.active_instance, self.active_instance.state.blocks
         #print >>sys.stderr, action,
         assert self.active_instance is not None
         features, rewards, stops = self.underlying.step([action], [self.active_instance])
+        #print "after", self.active_instance, self.active_instance.state.blocks
+        #print
         #obs = (self.active_instance.task.id, features[0])
         obs = features[0]
         return obs, rewards[0], stops[0], {}
@@ -113,8 +117,8 @@ class RlLabTrainer(object):
 
     def train(self, world, model, objective):
         env = TfEnv(RllEnvWrapper(world))
-        #policy = RllPolicyWrapper(model, env.spec, env._wrapped_env)
-        policy = CategoricalMLPPolicy("policy", env.spec)
+        policy = RllPolicyWrapper(model, env.spec, env._wrapped_env)
+        #policy = CategoricalMLPPolicy("policy", env.spec)
         baseline = LinearFeatureBaseline(env.spec)
         #baseline=RllBaselineWrapper(model),
 
@@ -127,7 +131,9 @@ class RlLabTrainer(object):
             max_path_length=self.config.trainer.max_rollout_len,
             n_itr=self.config.trainer.n_iters,
             discount=self.config.objective.discount,
-            step_size=self.config.objective.step_size
+            step_size=self.config.objective.step_size,
+            n_parallel=1,
+            entropy_bonus=self.config.objective.entropy_bonus
         )
 
         algo.train()

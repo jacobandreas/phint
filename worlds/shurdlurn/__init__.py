@@ -109,6 +109,7 @@ class ShurdlurnWorld(object):
             self.train_ids = self.train_ids[:self.config.world.n_train]
         if hasattr(self.config.world, "n_test"):
             self.test_ids = self.test_ids[:self.config.world.n_test]
+
         #self.train_ids = self.train_ids[6:7]
         #self.test_ids = self.test_ids[:10]
 

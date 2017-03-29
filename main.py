@@ -50,8 +50,8 @@ def configure():
 
     # set up logging
     log_name = os.path.join(config.experiment_dir, "run.log")
-    logging.basicConfig(filename=log_name, level=logging.DEBUG,
-    #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
+    #logging.basicConfig(filename=log_name, level=logging.DEBUG,
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
             format='%(asctime)s %(levelname)-8s %(message)s')
     def handler(type, value, tb):
         logging.exception("Uncaught exception: %s", str(value))

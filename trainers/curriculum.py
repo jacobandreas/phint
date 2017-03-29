@@ -87,7 +87,7 @@ class CurriculumTrainer(object):
             buf, total_reward = _do_rollout(self.config, world, inst, model, n_batch, self.session, intrinsic=True)
             i_rollout += self.config.trainer.n_rollout_batch
             objective.experience(buf)
-            for it, r in zip(inst, total_reward):
+            for i, it, r in zip(range(len(inst)), inst, total_reward):
                 #assert r <= 1
                 counts[it.task] += 1
                 rewards[it.task] += r

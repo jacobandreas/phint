@@ -14,7 +14,11 @@ class Reinforce(object):
         self.t_actor_loss = -tf.reduce_mean(
                 t_actor_log_prob * (self.t_reward - tf.stop_gradient(model.t_baseline))
                 + config.objective.entropy_bonus *
-                    model.action_dist.entropy(model.t_action_param, model.t_action_bias, model.t_action_temp))
+                    model.action_dist.entropy(
+                        model.t_action_param,
+                        model.t_action_bias,
+                        model.t_action_temp)
+                ) + model.t_loss_extra
         self.t_critic_loss = tf.reduce_mean(
                 tf.square(self.t_reward - model.t_baseline))
 
@@ -47,7 +51,7 @@ class Reinforce(object):
         feed.update(self.model.feed(s1, m1))
 
         actor_err, critic_err, _, _ = session.run(
-                [self.t_actor_loss, self.t_critic_loss, self.o_train_actor, 
+                [self.t_actor_loss, self.t_critic_loss, self.o_train_actor,
                     self.o_train_critic],
                 feed)
 

@@ -10,8 +10,8 @@ world:
   name: ShurdlurnWorld
   train_fold: train
   test_fold: val
-  #n_train: 1000
-  #n_test: 1000
+  n_train: 1000
+  n_test: 1000
 
 guide:
   name: SketchGuide
@@ -30,8 +30,12 @@ model:
     update: discrete
     gumbel: true
 
-    use_ling: false
-    use_task: true
+    param_ling: false
+    param_task: true
+
+    encode_ling: #0.1
+    decode_ling: 0.1
+
   critic:
     type: linear
     by_task: true
