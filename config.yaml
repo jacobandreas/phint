@@ -34,7 +34,7 @@ model:
     param_task: true
 
     encode_ling: 0 #0.1
-    decode_ling: 0.1
+    decode_ling: 0 #0.1
 
   critic:
     type: linear
