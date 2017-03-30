@@ -31,8 +31,8 @@ model:
     update: discrete
     gumbel: true
 
-    param_ling: true
-    param_task: false
+    param_ling: false
+    param_task: true
 
     encode_ling: 0 # 0.01
     decode_ling: 0 # 0.01
