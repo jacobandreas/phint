@@ -14,6 +14,7 @@ def _do_rollout(config, world, task, model, n_batch, session, intrinsic=False):
     stop = [False] * n_batch
     buf = [[] for _ in range(n_batch)]
     total_reward = np.zeros(n_batch)
+    total_complete = np.zeros(n_batch)
     while max(len(b) for b in buf) < config.trainer.max_rollout_len and not all(stop):
         action, agent_stop, mstate_, intrinsic_rew = model.act(
                 obs, mstate, task, session)
@@ -26,15 +27,15 @@ def _do_rollout(config, world, task, model, n_batch, session, intrinsic=False):
         for i in range(n_batch):
             if not stop[i]:
                 rew_here = rew[i]
-                if agent_stop[i]:
-                    rew_here += complete_rew[i]
+                #if agent_stop[i]:
+                #    rew_here += complete_rew[i]
                 total_reward[i] += rew_here
                 buf[i].append(Transition(obs[i], mstate[i], action[i],
                     obs_[i], mstate_[i], rew_here))
                 stop[i] = stop[i] or agent_stop[i] or world_stop[i]
         obs = obs_
         mstate = mstate_
-    return buf, total_reward
+    return buf, total_reward, total_complete
 
 class CurriculumTrainer(object):
     def __init__(self, config, session):
@@ -84,7 +85,7 @@ class CurriculumTrainer(object):
         while True:
             inst = [world.sample_train(task_probs) for _ in range(n_batch)]
             inits = [str(i.state.blocks) + " " + str(i.state.goal) for i in inst]
-            buf, total_reward = _do_rollout(self.config, world, inst, model, n_batch, self.session, intrinsic=True)
+            buf, total_reward, _ = _do_rollout(self.config, world, inst, model, n_batch, self.session, intrinsic=True)
             i_rollout += self.config.trainer.n_rollout_batch
             objective.experience(buf)
             for i, it, r in zip(range(len(inst)), inst, total_reward):

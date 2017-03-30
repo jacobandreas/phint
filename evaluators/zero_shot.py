@@ -14,15 +14,20 @@ class ZeroShotEvaluator(object):
 
         n_batch = self.config.trainer.n_rollout_batch
         total_rew = 0.
+        total_comp = 0.
         for i_task in range(world.n_test):
             probs = np.zeros(world.n_test)
             probs[i_task] = 1
             inst = [world.sample_test(probs) for _ in range(n_batch)]
-            buf, rew = _do_rollout(
+            buf, rew, comp = _do_rollout(
                     self.config, world, inst, model, n_batch, self.session)
             total_rew += np.mean(rew)
+            total_comp += np.mean(comp)
             logging.info("[zs reward] %f", np.mean(rew))
+            logging.info("[zs complete] %f", np.mean(comp))
         total_rew /= world.n_test
+        total_comp /= world.n_test
 
         logging.info("[total zs reward] %f", total_rew)
+        logging.info("[total zs comp] %f", total_comp)
         logging.info("")

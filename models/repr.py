@@ -18,11 +18,14 @@ class EmbeddingController(object):
         self.t_len = tf.placeholder(tf.int32, shape=(None,))
         #self.t_task = tf.placeholder(tf.int32, shape=(None,))
 
+        #with tf.variable_scope("ling_repr"):
+        #    t_embed = _embed(self.t_hint, guide.n_vocab, config.model.controller.n_embed)
+        #    cell = tf.contrib.rnn.GRUCell(config.model.controller.n_hidden)
+        #    _, t_final_hidden = tf.nn.dynamic_rnn(cell, t_embed, self.t_len, dtype=tf.float32)
+        #    t_ling_repr = t_final_hidden
         with tf.variable_scope("ling_repr"):
-            t_embed = _embed(self.t_hint, guide.n_vocab, config.model.controller.n_embed)
-            cell = tf.contrib.rnn.GRUCell(config.model.controller.n_hidden)
-            _, t_final_hidden = tf.nn.dynamic_rnn(cell, t_embed, self.t_len, dtype=tf.float32)
-            t_ling_repr = t_final_hidden
+            t_embed = _embed(self.t_hint, guide.n_vocab, config.model.controller.n_hidden)
+            t_ling_repr = tf.reduce_mean(t_embed, axis=1)
 
         with tf.variable_scope("task_repr"):
             t_task_repr = _embed(
@@ -46,7 +49,7 @@ class EmbeddingController(object):
             t_dec_embed = t_embed[:, :-1, :]
             t_dec_target = self.t_hint[:, 1:]
             t_dec_pred, _ = tf.nn.dynamic_rnn(cell, t_dec_embed, initial_state=self.t_repr)
-            self.t_dec_loss = tf.reduce_mean(
+            self.t_dec_loss = tf.reduce_sum(
                     tf.nn.sparse_softmax_cross_entropy_with_logits(
                         labels=t_dec_target,
                         logits=t_dec_pred),
@@ -56,7 +59,8 @@ class EmbeddingController(object):
         return [ModelState(i.task.id, self.guide.guide_for(i.task)) for i in inst]
 
     def feed(self, state):
-        max_len = max(len(s.hint) for s in state)
+        #max_len = max(len(s.hint) for s in state)
+        max_len = self.guide.max_len
         return {
             self.t_hint: [s.hint + (0,)*(max_len-len(s.hint)) for s in state],
             #self.t_task: [s.task_id for s in state],

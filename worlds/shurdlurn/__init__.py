@@ -36,10 +36,11 @@ def listify(sexp):
 ShurdlurnTask = namedtuple("ShurdlurnTask", ["start", "end", "hint", "id"])
 #ShurdlurnInstance = namedtuple("ShurdlurnInstance", ["task", "state"])
 class ShurdlurnInstance(object):
-    def __init__(self, task, state):
+    def __init__(self, task, state, demo):
         self.task = task
         self.state = state
         self.step = 0
+        self.demo = demo
 
 class ShurdlurnWorld(object):
     def __init__(self, config):
@@ -102,6 +103,7 @@ class ShurdlurnWorld(object):
                         self.test_ids.append(t_id)
                     else:
                         assert False
+
                     task = ShurdlurnTask(start, end, utt, t_id)
                     tasks[t_id] = task
 
@@ -128,13 +130,43 @@ class ShurdlurnWorld(object):
         self.max_height = max_height
         self.max_hint_len = max(len(t.hint) for t in tasks.values())
         self.n_kinds = n_kinds
-        self.n_obs = max_width * max_height * (n_kinds + 1) + max_width
+        self.n_obs = 2 * max_width * max_height * (n_kinds + 1) + max_width
         self.n_act = 2 + 1 + n_kinds
         self.n_tasks = len(tasks)
         self.n_train = len(self.train_ids)
         self.n_test = len(self.test_ids)
         self.tasks = tasks
         self.random = util.next_random()
+
+    def make_demo(self, state):
+        demo = []
+        assert state.agent_x == 0
+        end = state.goal
+        counter = 0
+        while state.blocks != end and counter < 20:
+            counter += 1
+            demo_x = state.agent_x
+            height = len(state.blocks[demo_x])
+            if state.blocks[demo_x] == end[demo_x]:
+                action = 1
+            elif end[demo_x][:height] != state.blocks[demo_x]:
+                action = 2
+            else:
+                top = end[demo_x][height]
+                action = top + 2 + 1
+            _, new_state, _ = state.step(action)
+            demo.append((state, action, new_state))
+            #print demo_x
+            #print state.blocks
+            #print action
+            #print new_state.blocks
+            #print end
+            #print self.max_height
+            #print
+            state = new_state
+        #print
+        assert state.blocks == end
+        return demo
 
     def sample_train(self, p=None):
         return self.sample_instance(self.train_ids, p)
@@ -147,8 +179,8 @@ class ShurdlurnWorld(object):
         idx_task = self.random.choice(len(fold), p=p)
         id_task = fold[idx_task]
         task = self.tasks[id_task]
-        init_state = ShurdlurnState(0, task.start, task.end, self.max_width, self.max_height, self.n_kinds)
-        return ShurdlurnInstance(task, init_state)
+        init_state = ShurdlurnState(0, task.start, task.start, task.end, self.max_width, self.max_height, self.n_kinds)
+        return ShurdlurnInstance(task, init_state, self.make_demo(init_state))
 
     def reset(self, tasks):
         return [t.state.features() for t in tasks]
@@ -167,12 +199,13 @@ class ShurdlurnWorld(object):
         return features, rewards, stops
 
     def complete(self, insts):
-        return [0] * len(insts)
-        #return [1 if i.state.blocks == i.state.goal else 0 for i in insts]
+        #return [0] * len(insts)
+        return [1 if i.state.blocks == i.state.goal else 0 for i in insts]
 
 class ShurdlurnState(object):
-    def __init__(self, agent_x, blocks, goal, max_width, max_height, n_kinds):
+    def __init__(self, agent_x, start, blocks, goal, max_width, max_height, n_kinds):
         self.agent_x = agent_x
+        self.start = start
         self.blocks = blocks
         self.goal = goal
         self.max_width = max_width
@@ -180,16 +213,21 @@ class ShurdlurnState(object):
         self.n_kinds = n_kinds
         self._cached_features = None
 
+    def block_features(self, blocks):
+        board = np.zeros((self.max_width, self.max_height, self.n_kinds+1))
+        for x in range(len(blocks)):
+            for y in range(len(blocks[x])):
+                assert y >= 0
+                board[x, y, blocks[x][y]+1] = 1
+        return board
+
     def features(self):
         if self._cached_features is None:
-            board = np.zeros((self.max_width, self.max_height, self.n_kinds+1))
             pos = np.zeros((self.max_width))
             pos[self.agent_x] = 1
-            for x in range(len(self.blocks)):
-                for y in range(len(self.blocks[x])):
-                    assert y >= 0
-                    board[x, y, self.blocks[x][y]+1] = 1
-            self._cached_features = np.concatenate((board.ravel(), pos))
+            start_board = self.block_features(self.start).ravel()
+            board = self.block_features(self.blocks).ravel()
+            self._cached_features = np.concatenate((start_board, board, pos))
         return self._cached_features
 
     def step(self, action):
@@ -214,7 +252,7 @@ class ShurdlurnState(object):
             elif (x == self.agent_x 
                     and action > 2 
                     and action < self.n_kinds + 2 + 1
-                    and len(self.blocks[x]) < self.max_height - 1):
+                    and len(self.blocks[x]) < self.max_height):
                 kind = action - 2 - 1
                 assert kind < self.n_kinds
                 new_blocks.append(self.blocks[x] + (kind,))
@@ -225,7 +263,7 @@ class ShurdlurnState(object):
             else:
                 new_blocks.append(self.blocks[x])
         new_blocks = tuple(new_blocks)
-        nstate = ShurdlurnState(nx, new_blocks, self.goal, self.max_width, self.max_height, self.n_kinds)
+        nstate = ShurdlurnState(nx, self.start, new_blocks, self.goal, self.max_width, self.max_height, self.n_kinds)
         stop = new_blocks == self.goal
         if stop:
             reward += 10

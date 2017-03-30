@@ -19,9 +19,9 @@ class AdaptationEvaluator(object):
             probs = np.zeros(world.n_test)
             probs[i_task] = 1
             updates = 0
-            while updates < 50:
+            while updates < 200:
                 inst = [world.sample_test(probs) for _ in range(n_batch)]
-                buf, rew = _do_rollout(
+                buf, rew, comp = _do_rollout(
                         self.config, world, inst, model, n_batch, self.session)
                 objective.experience(buf)
                 if not objective.ready():
@@ -30,5 +30,6 @@ class AdaptationEvaluator(object):
                 objective.train(self.session)
                 if updates % 10 == 0:
                     logging.info("[ad reward] %d %f", i_task, np.mean(rew))
+                    logging.info("[ad complete] %d %f", i_task, np.mean(comp))
 
         logging.info("")

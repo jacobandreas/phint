@@ -22,11 +22,13 @@ class DiscreteDist(object):
         return actions, rets, stops
 
     def log_prob_of(self, t_param, t_bias, t_temp, t_action, t_ret):
-        #t_score = t_param * tf.expand_dims(t_temp, axis=1) + t_bias
+        ##t_score = t_param * tf.expand_dims(t_temp, axis=1) + t_bias
         t_score = t_param
-        t_log_prob = tf.nn.log_softmax(t_score)
-        t_chosen = util.batch_gather(t_log_prob, t_action)
-        return t_chosen
+        #t_log_prob = tf.nn.log_softmax(t_score)
+        #t_chosen = util.batch_gather(t_log_prob, t_action)
+        #return t_chosen
+        return -tf.nn.sparse_softmax_cross_entropy_with_logits(
+                logits=t_score, labels=t_action)
 
     def likelihood_ratio_of(self, t_param, t_bias, t_temp, t_param_old, t_bias_old, t_temp_old, t_action, t_ret):
         #t_score = t_param * tf.expand_dims(t_temp, axis=1) + t_bias

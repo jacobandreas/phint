@@ -1,6 +1,7 @@
 name: train
 train: true
-eval: false
+eval: true
+load: train
 #name: eval
 #train: false
 #load: train
@@ -10,8 +11,8 @@ world:
   name: ShurdlurnWorld
   train_fold: train
   test_fold: val
-  n_train: 1000
-  n_test: 1000
+  #n_train: 1000
+  n_test: 20
 
 guide:
   name: SketchGuide
@@ -30,11 +31,11 @@ model:
     update: discrete
     gumbel: true
 
-    param_ling: false
-    param_task: true
+    param_ling: true
+    param_task: false
 
     encode_ling: 0 # 0.01
-    decode_ling: 0.01
+    decode_ling: 0 # 0.01
 
   critic:
     type: linear
@@ -48,6 +49,7 @@ objective:
 
 trainer: 
   name: CurriculumTrainer
+  name: ImitationTrainer
   max_rollout_len: 100
   n_update: 100
   n_rollout_batch: 100

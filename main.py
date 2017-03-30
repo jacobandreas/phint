@@ -2,8 +2,7 @@ from misc.util import Struct
 import guides
 import worlds
 import models
-from objectives.reinforce import Reinforce
-from objectives.ppo import Ppo
+from objectives import Reinforce, Ppo, Cloning
 import trainers
 from evaluators.zero_shot import ZeroShotEvaluator
 from evaluators.adaptation import AdaptationEvaluator
@@ -22,7 +21,8 @@ def main():
     world = worlds.load(config)
     guide = guides.load(config, world)
     model = models.load(config, world, guide)
-    objective = Reinforce(config, model)
+    #objective = Reinforce(config, model)
+    objective = Cloning(config, model)
 
     session = tf.Session()
 
@@ -31,11 +31,14 @@ def main():
         trainer.train(world, model, objective)
 
     if config.eval:
-        #zs_evaluator = ZeroShotEvaluator(config, session)
-        #zs_evaluator.evaluate(world, model)
+        zs_evaluator = ZeroShotEvaluator(config, session)
+        zs_evaluator.evaluate(world, model)
 
+        config.model.controller.param_ling = False
+        config.model.controller.param_task = True
         ad_evaluator = AdaptationEvaluator(config, session)
-        ad_evaluator.evaluate(world, model, objective)
+        ad_objective = Reinforce(config, model)
+        ad_evaluator.evaluate(world, model, ad_objective)
 
 def configure():
     # load config
