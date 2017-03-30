@@ -49,7 +49,7 @@ objective:
 
 trainer: 
   name: CurriculumTrainer
-  name: ImitationTrainer
+  #name: ImitationTrainer
   max_rollout_len: 100
   n_update: 100
   n_rollout_batch: 100

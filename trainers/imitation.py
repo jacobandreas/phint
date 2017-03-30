@@ -21,7 +21,7 @@ class ImitationTrainer(object):
         i_rollout = 0
         model.save(self.session)
         #while True:
-        while i_iter < 5000:
+        while i_iter < 10000:
             inst = [world.sample_train() for _ in range(n_batch)]
             buf = []
             mstate = model.init(inst, None)
