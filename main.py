@@ -21,8 +21,8 @@ def main():
     world = worlds.load(config)
     guide = guides.load(config, world)
     model = models.load(config, world, guide)
-    #objective = Reinforce(config, model)
-    objective = Cloning(config, model)
+    objective = Reinforce(config, model)
+    #objective = Cloning(config, model)
 
     session = tf.Session()
 

@@ -48,8 +48,8 @@ objective:
   n_train_batch: 4000
 
 trainer: 
-  #name: CurriculumTrainer
-  name: ImitationTrainer
+  name: CurriculumTrainer
+  #name: ImitationTrainer
   max_rollout_len: 100
   n_update: 100
   n_rollout_batch: 100
