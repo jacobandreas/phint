@@ -31,7 +31,7 @@ model:
     update: discrete
     gumbel: true
 
-    param_ling: false
+    param_ling: true
     param_task: true
 
     encode_ling: 0 # 0.01
@@ -60,7 +60,7 @@ trainer:
 
 #trainer:
 #  name: RlLabTrainer
-#  #algo: TRPO
-#  algo: VPG
+#  algo: TRPO
+#  #algo: VPG
 #  max_rollout_len: 100
 #  n_iters: 10000
