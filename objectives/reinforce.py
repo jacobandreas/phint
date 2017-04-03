@@ -24,6 +24,8 @@ class Reinforce(object):
 
         optimizer = tf.train.RMSPropOptimizer(config.objective.step_size)
         self.o_train_actor = optimizer.minimize(self.t_actor_loss)
+        self.o_train_repr = optimizer.minimize(
+                self.t_actor_loss, var_list=model.repr_params)
         self.o_train_critic = optimizer.minimize(self.t_critic_loss)
 
         self.buffer = []
@@ -39,7 +41,7 @@ class Reinforce(object):
     def ready(self):
         return len(self.buffer) >= self.config.objective.n_train_batch
 
-    def train(self, session):
+    def train(self, session, repr_only=False):
         self.buffer = self.buffer[:self.config.objective.n_train_batch]
         s1, m1, a, s2, m2, r = zip(*self.buffer)
         act, ret = zip(*a)
@@ -50,9 +52,15 @@ class Reinforce(object):
         }
         feed.update(self.model.feed(s1, m1))
 
+        if repr_only:
+            o_train_actor = self.o_train_repr
+            o_train_critic = self.t_critic_loss # hack
+        else:
+            o_train_actor = self.o_train_actor
+            o_train_critic = self.o_train_critic
+
         actor_err, critic_err, _, _ = session.run(
-                [self.t_actor_loss, self.t_critic_loss, self.o_train_actor,
-                    self.o_train_critic],
+                [self.t_actor_loss, self.t_critic_loss, o_train_actor, o_train_critic],
                 feed)
 
         self.buffer = []

@@ -26,19 +26,24 @@ def main():
 
     session = tf.Session()
 
-    if config.train:
-        trainer = trainers.load(config, session)
-        trainer.train(world, model, objective)
-
-    if config.eval:
-        zs_evaluator = ZeroShotEvaluator(config, session)
+    def _evaluate():
+        with open("config.yaml") as config_f:
+            config_copy = Struct(**yaml.load(config_f))
+        zs_evaluator = ZeroShotEvaluator(config_copy, session)
         zs_evaluator.evaluate(world, model)
 
-        config.model.controller.param_ling = False
-        config.model.controller.param_task = True
-        ad_evaluator = AdaptationEvaluator(config, session)
-        ad_objective = Reinforce(config, model)
+        config_copy.model.controller.param_ling = False
+        config_copy.model.controller.param_task = True
+        ad_evaluator = AdaptationEvaluator(config_copy, session)
+        ad_objective = Reinforce(config_copy, model)
         ad_evaluator.evaluate(world, model, ad_objective)
+
+    if config.train:
+        trainer = trainers.load(config, session)
+        trainer.train(world, model, objective, _evaluate if config.eval else None)
+
+    if config.eval:
+        _evaluate()
 
 def configure():
     # load config

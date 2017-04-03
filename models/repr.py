@@ -27,9 +27,10 @@ class EmbeddingController(object):
             t_embed = _embed(self.t_hint, guide.n_vocab, config.model.controller.n_hidden)
             t_ling_repr = tf.reduce_mean(t_embed, axis=1)
 
-        with tf.variable_scope("task_repr"):
+        with tf.variable_scope("task_repr") as repr_scope:
             t_task_repr = _embed(
                     t_task, guide.n_tasks, config.model.controller.n_hidden)
+            self.repr_params = util.vars_in_scope(repr_scope)
 
         param_ling = config.model.controller.param_ling
         param_task = config.model.controller.param_task
@@ -105,6 +106,7 @@ class ReprModel(object):
             self.actor = Actor(config, self.t_obs, self.controller.t_repr, world, guide)
             self.critic = Critic(config, self.t_obs, self.controller.t_repr, self.t_task, world, guide)
             self.params = util.vars_in_scope(scope)
+            self.repr_params = self.controller.repr_params
         self.t_action_param = self.actor.t_action_param
         self.t_action_bias = 0
         self.t_action_temp = 0

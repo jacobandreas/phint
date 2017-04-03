@@ -4,7 +4,7 @@ eval: true
 load: train
 #name: eval
 #train: false
-#load: train
+#load: train_backup
 #eval: true
 
 world: 
@@ -12,7 +12,7 @@ world:
   train_fold: train
   test_fold: val
   #n_train: 1000
-  n_test: 20
+  n_test: 10
 
 guide:
   name: SketchGuide

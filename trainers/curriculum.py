@@ -27,6 +27,7 @@ def _do_rollout(config, world, task, model, n_batch, session, intrinsic=False):
         for i in range(n_batch):
             if not stop[i]:
                 rew_here = rew[i]
+                total_complete[i] += complete_rew[i]
                 #if agent_stop[i]:
                 #    rew_here += complete_rew[i]
                 total_reward[i] += rew_here
@@ -66,7 +67,7 @@ class CurriculumTrainer(object):
         probs /= np.sum(probs)
         return probs
 
-    def train(self, world, model, objective):
+    def train(self, world, model, objective, eval_thunk=None):
         self.session.run(tf.global_variables_initializer())
         n_batch = self.config.trainer.n_rollout_batch
 
@@ -128,6 +129,9 @@ class CurriculumTrainer(object):
                 if (i_iter % (n_update * self.config.trainer.resample_every) == 0
                         or i_iter > self.config.trainer.switch_iter):
                     task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
+
+                if i_iter % (n_update * 100) == 0 and eval_thunk is not None:
+                    eval_thunk()
 
                 #logging.info("[probs] %s", task_probs)
                 logging.info("[mean] %f" % np.mean(scores))
