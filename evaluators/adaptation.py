@@ -32,6 +32,7 @@ class AdaptationEvaluator(object):
                 if np.mean(comp) == 1:
                     logging.info("[ad success] %d %d", i_task, updates)
                     success = True
+                    break
                 #if updates % 10 == 0:
                 #    logging.info("[ad reward] %d %f", i_task, np.mean(rew))
                 #    logging.info("[ad complete] %d %f", i_task, np.mean(comp))
