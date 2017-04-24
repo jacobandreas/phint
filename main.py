@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 from misc.util import Struct
 import guides
 import worlds

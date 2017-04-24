@@ -8,7 +8,9 @@ load: train
 #eval: true
 
 world: 
-  name: ShurdlurnWorld
+  name: GymWorld
+  env: Ant-v1
+  #env: HalfCheetah-v1
   train_fold: train
   test_fold: val
   #n_train: 1000
@@ -22,8 +24,11 @@ model:
   intrinsic_bonus: 0
   actor:
     type: discrete
-    n_hidden: [128, 128]
-    ret_bias: -3
+    #n_hidden: [128, 128]
+    n_hidden: [32, 32]
+    #ret_bias: -3
+    ret_bias: 0
+
   controller:
     type: att
     n_hidden: 128
@@ -41,26 +46,32 @@ model:
     type: linear
     by_task: true
 
+#objective:
+#  discount: 0.9
+#  entropy_bonus: 0.01
+#  step_size: 0.001
+#  n_train_batch: 4000
+
 objective:
-  discount: 0.9
-  entropy_bonus: 0.01
-  step_size: 0.001
-  n_train_batch: 4000
+  discount: 0.99
+  step_size: 0.01
+  entropy_bonus: 0
+  n_train_batch: 20000
 
-trainer: 
-  name: CurriculumTrainer
-  #name: ImitationTrainer
-  max_rollout_len: 100
-  n_update: 100
-  n_rollout_batch: 100
-  parallel: 4
-  log_each_task: false
-  resample_every: 5
-  switch_iter: 10000
-
-#trainer:
-#  name: RlLabTrainer
-#  algo: TRPO
-#  #algo: VPG
+#trainer: 
+#  name: CurriculumTrainer
+#  #name: ImitationTrainer
 #  max_rollout_len: 100
-#  n_iters: 10000
+#  n_update: 100
+#  n_rollout_batch: 100
+#  parallel: 4
+#  log_each_task: false
+#  resample_every: 5
+#  switch_iter: 10000
+
+trainer:
+  name: RlLabTrainer
+  algo: TRPO
+  #algo: VPG
+  max_rollout_len: 1000
+  n_iters: 10000

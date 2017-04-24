@@ -1,10 +1,11 @@
 import sys
-try:
-    from malmo import MalmoWorld
-except Exception as e:
-    print >>sys.stderr, "Warning: unable to load Malmo"
+#try:
+#    from malmo import MalmoWorld
+#except Exception as e:
+#    print >>sys.stderr, "Warning: unable to load Malmo"
 from minicraft import MinicraftWorld
 from shurdlurn import ShurdlurnWorld
+from gym import GymWorld
 
 def load(config):
     cls_name = config.world.name

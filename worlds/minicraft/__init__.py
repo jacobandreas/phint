@@ -81,6 +81,7 @@ class MinicraftWorld(object):
                 4 + \
                 1
         self.n_act = N_ACTIONS
+        self.is_discrete = True
         self.n_tasks = len(self.tasks)
         self.max_hint_len = 5
 

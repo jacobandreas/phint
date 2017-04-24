@@ -182,8 +182,8 @@ class ShurdlurnWorld(object):
         init_state = ShurdlurnState(0, task.start, task.start, task.end, self.max_width, self.max_height, self.n_kinds)
         return ShurdlurnInstance(task, init_state, self.make_demo(init_state))
 
-    def reset(self, tasks):
-        return [t.state.features() for t in tasks]
+    def reset(self, insts):
+        return [i.state.features() for i in insts]
 
     def step(self, actions, insts):
         features = []

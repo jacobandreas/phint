@@ -1,4 +1,5 @@
 MALMO="/Users/jda/Code/3p/malmo"
 RLLAB="/Users/jda/Code/3p/rllab"
+MJ_PY="/Users/jda/Code/3p/rllab/rllab/mujoco_py"
 export PYTHONPATH="$MALMO/install/Python_examples:$RLLAB"
 export MALMO_XSD_PATH="$MALMO/Schemas"

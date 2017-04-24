@@ -1,6 +1,6 @@
 from misc import util
 from net import _linear, _embed, _mlp
-from dists import DiscreteDist
+from dists import DiscreteDist, DiagonalGaussianDist
 
 from collections import namedtuple
 import logging
@@ -95,7 +95,12 @@ class ReprModel(object):
         self.guide = guide
         self.config = config
         self.prepare(config, world, guide)
-        self.action_dist = DiscreteDist()
+        if world.is_discrete:
+            self.action_dist = DiscreteDist()
+        else:
+            # TODO
+            self.action_dist = DiscreteDist()
+            #self.action_dist = DiagonalGaussianDist()
         self.saver = tf.train.Saver()
 
     def prepare(self, config, world, guide):
@@ -105,11 +110,16 @@ class ReprModel(object):
             self.controller = EmbeddingController(config, self.t_obs, self.t_task, world, guide)
             self.actor = Actor(config, self.t_obs, self.controller.t_repr, world, guide)
             self.critic = Critic(config, self.t_obs, self.controller.t_repr, self.t_task, world, guide)
+
+            self.t_action_param = self.actor.t_action_param
+            self.t_action_temp = tf.get_variable(
+                    "temp", shape=(world.n_act,),
+                    initializer=tf.constant_initializer(0))
+            self.t_action_bias = 0
+
             self.params = util.vars_in_scope(scope)
             self.repr_params = self.controller.repr_params
-        self.t_action_param = self.actor.t_action_param
-        self.t_action_bias = 0
-        self.t_action_temp = 0
+
         self.t_baseline = self.critic.t_value
 
         self.t_loss_extra = 0
@@ -125,7 +135,8 @@ class ReprModel(object):
         with tf.variable_scope("ReprModel", reuse=True) as scope:
             controller = EmbeddingController(self.config, obs_var, task_id_var, self.world, self.guide)
             actor = Actor(self.config, obs_var, controller.t_repr, self.world, self.guide)
-        return tf.nn.softmax(actor.t_action_param)
+        return actor.t_action_param, self.t_action_temp
+        #return tf.nn.softmax(actor.t_action_param)
 
 
     def init(self, task, obs):
@@ -146,10 +157,12 @@ class ReprModel(object):
         stop = [False] * n_obs
         return zip(action, ret), stop, mstate, [0]*n_obs
 
-    def get_action_param(self, obs, mstate, task, session):
+    def get_action(self, obs, mstate, task, session):
         n_obs = len(obs)
-        action_p, rep = session.run([self.t_action_param, self.controller.t_repr], self.feed(obs, mstate))
-        return action_p
+        action_p, action_t, rep = session.run(
+                [self.t_action_param, self.t_action_temp, self.controller.t_repr], 
+                self.feed(obs, mstate))
+        return action_p, action_t, mstate
 
     def save(self, session):
         self.saver.save(session, os.path.join(self.config.experiment_dir, "repr.chk"))

@@ -47,3 +47,17 @@ class DiscreteDist(object):
         t_logprob = tf.log(t_prob + TINY)
         return -tf.reduce_sum(t_prob * t_logprob, axis=1)
 
+class DiagonalGaussianDist(object):
+    def __init__(self):
+        self.random = util.next_random()
+
+    def sample(self, param, bias, temp):
+        cov = np.diag(np.exp(temp))
+        actions = [self.random.multivariate_normal(param[i, :], cov)
+                for i in range(param.shape[0])]
+        rets = [False] * len(actions)
+        stops = [False] * len(actions)
+        return actions, rets, stops
+
+    def log_prob_of(self, t_param, t_bias, t_temp, t_action, t_ret):
+        return
