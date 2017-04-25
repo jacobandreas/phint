@@ -1,0 +1,1 @@
+date=Mon Feb 29 04:22:39 PST 2016	sessionId=206dyniM274	remote=75-134-114-123.dhcp.aldl.mi.charter.com	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=

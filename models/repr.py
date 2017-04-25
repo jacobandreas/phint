@@ -162,6 +162,7 @@ class ReprModel(object):
         action_p, action_t, rep = session.run(
                 [self.t_action_param, self.t_action_temp, self.controller.t_repr], 
                 self.feed(obs, mstate))
+        #print rep[:5, :5]
         return action_p, action_t, mstate
 
     def save(self, session):

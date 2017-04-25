@@ -1,0 +1,8 @@
+date=Mon Feb 29 18:59:22 PST 2016	sessionId=AV22FQTJNBUZT	remote=cpe-66-91-209-94.hawaii.res.rr.com	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 19:00:16 PST 2016	sessionId=AV22FQTJNBUZT	remote=cpe-66-91-209-94.hawaii.res.rr.com	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string babystep)))	response=
+date=Mon Feb 29 19:00:18 PST 2016	sessionId=AV22FQTJNBUZT	remote=cpe-66-91-209-94.hawaii.res.rr.com	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string pattern)))	response=
+date=Mon Feb 29 19:00:20 PST 2016	sessionId=AV22FQTJNBUZT	remote=cpe-66-91-209-94.hawaii.res.rr.com	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string babynot)))	response=
+date=Mon Feb 29 19:00:21 PST 2016	sessionId=AV22FQTJNBUZT	remote=cpe-66-91-209-94.hawaii.res.rr.com	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 19:00:50 PST 2016	sessionId=AV22FQTJNBUZT	remote=cpe-66-91-209-94.hawaii.res.rr.com	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 19:03:13 PST 2016	sessionId=AV22FQTJNBUZT	remote=cpe-66-91-209-94.hawaii.res.rr.com	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 19:03:59 PST 2016	sessionId=AV22FQTJNBUZT	remote=cpe-66-91-209-94.hawaii.res.rr.com	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=

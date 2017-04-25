@@ -1,0 +1,1 @@
+date=Mon Feb 29 19:12:07 PST 2016	sessionId=A3389CKDG69V5Q	remote=google-proxy-66-249-88-243.google.com	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=

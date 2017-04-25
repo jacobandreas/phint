@@ -15,6 +15,7 @@ from sandbox.rocky.tf.distributions.diagonal_gaussian import DiagonalGaussian
 from rllab.misc.instrument import run_experiment_lite
 from rllab.core.serializable import Serializable
 
+from misc import util
 from models.repr import ModelState
 from worlds.gym import GymWorld
 
@@ -43,12 +44,18 @@ class RllEnvWrapper(RllEnv):
     @property
     def observation_space(self):
         bound = np.asarray([np.inf] * self.underlying.n_obs)
-        return Box(-bound, bound)
+        return Product(
+                Box(-bound, bound),
+                Box(np.asarray([0]), np.asarray([self.underlying.n_tasks])))
 
     def reset(self):
-        self.active_instance = self.underlying.sample_train()
-        obs = self.underlying.reset([self.active_instance])[0]
-        return obs
+        #print "sampled", self.active_instance.task.id
+        #if self.underlying.rll_env.env.done:
+        if True:
+            self.active_instance = self.underlying.sample_train()
+            underlying_obs, = self.underlying.reset([self.active_instance])
+            return (underlying_obs, [self.active_instance.task.id])
+        return (self.curr_obs, [self.active_instance.task.id])
 
     def step(self, action):
         #print "before", self.active_instance, self.active_instance.state.blocks
@@ -58,7 +65,8 @@ class RllEnvWrapper(RllEnv):
         #print "after", self.active_instance, self.active_instance.state.blocks
         #print
         #obs = (self.active_instance.task.id, features[0])
-        obs = features[0]
+        obs = (features[0], [self.active_instance.task.id])
+        self.curr_obs = obs
         return obs, rewards[0], stops[0], {}
 
     def horizon(self):
@@ -78,8 +86,9 @@ class RllPolicyWrapper(RllPolicy, Serializable):
         else:
             self.dist = DiagonalGaussian(env_spec.action_space.flat_dim)
             self.is_discrete = False
-        self.mstate = None
         self.env = env
+        self.initialized_mstates = None
+        self.mstates = None
         super(RllPolicy, self).__init__(env_spec)
 
     @property
@@ -88,40 +97,53 @@ class RllPolicyWrapper(RllPolicy, Serializable):
 
     @property
     def vectorized(self):
+        #return False
         return True
 
     def dist_info_sym(self, obs_var, state_info_vars):
-        task_id_var = tf.cast(state_info_vars["task_id"], tf.int32)
-        t_param, t_temp = self.underlying.prepare_sym(obs_var, task_id_var)
+        # TODO from spec
+        n_obs = self.env.underlying.n_obs
+        true_obs_var = obs_var[:, :n_obs]
+        task_id_var = tf.cast(obs_var[:, n_obs], tf.int32)
+        #task_id_var = tf.cast(state_info_vars["task_id"], tf.int32)
+        t_param, t_temp = self.underlying.prepare_sym(true_obs_var, task_id_var)
         if self.is_discrete:
             return {"prob": tf.nn.softmax(t_mean)}
         else:
             return {"mean": t_param, "log_std": t_temp}
 
     def reset(self, dones=None):
-        self.initialized_mstates = False
-        self.mstates = None
+        if self.initialized_mstates is None:
+            self.initialized_mstates = [False] * len(dones)
+            self.mstates = [None] * len(dones)
+        assert len(self.initialized_mstates) == len(dones)
+        for i, d in enumerate(dones):
+            if d:
+                self.initialized_mstates[i] = False
 
     def get_action(self, obs):
-        if not self.initialized_mstates:
-            assert self.env.active_instance is not None
-            self.mstates = [ModelState(self.env.active_instance.task.id, (0,))]
-            self.initialiezd_mstates = True
-
         actions, params = self.get_actions([obs])
-        action = actions[0, :]
-        return action, params
+        action = actions[0]
+        param = {k: v[0] for k, v in params.items()}
+        return action, param
 
     def get_actions(self, obs):
-        if not self.initialized_mstates:
-            assert self.env.active_instance is not None
-            self.mstates = [
-                    ModelState(self.env.active_instance.task.id, (0,))
-                    for _ in range(len(obs))]
-            self.initialized_mstates = True
+        true_obs, task_ids = zip(*obs)
+        task_ids = np.asarray(task_ids).ravel()
+
+        #if not all(self.initialized_mstates):
+        #    print task_ids
+        for i, im in enumerate(self.initialized_mstates):
+            if not im:
+                self.mstates[i] = ModelState(task_ids[i], (0,))
+                self.initialized_mstates[i] = True
 
         session = tf.get_default_session()
-        action_p, action_t, self.mstates = self.underlying.get_action(np.asarray(obs), self.mstates, None, session)
+        action_p, action_t, self.mstates = self.underlying.get_action(np.asarray(true_obs), self.mstates, None, session)
+
+        #if hasattr(self, "did"):
+        #    exit()
+        #self.did = True
 
         if self.is_discrete:
             action_p = np.exp(action_p)
@@ -130,7 +152,7 @@ class RllPolicyWrapper(RllPolicy, Serializable):
             #action = self.action_space.weighted_sample(action_p)
             return actions, {
                 "prob": action_p,
-                "task_id": [m.task_id for m in self.mstates]
+                #"task_id": [m.task_id for m in self.mstates]
             }
         else:
             actions = [
@@ -139,15 +161,15 @@ class RllPolicyWrapper(RllPolicy, Serializable):
             #action = self.dist.sample({"mean": action_p, "log_std": action_t})
             return actions, {
                 "mean": action_p, "log_std": [action_t for _ in range(len(obs))],
-                "task_id": [m.task_id for m in self.mstates]
+                #"task_id": [m.task_id for m in self.mstates]
             }
 
     def get_params_internal(self, **tags):
         return self.underlying.params
 
-    @property
-    def state_info_specs(self):
-        return [("task_id", ())]
+    #@property
+    #def state_info_specs(self):
+    #    return [("task_id", ())]
 
 class RllBaselineWrapper(RllBaseline):
     def __init__(self, underlying):

@@ -1,0 +1,1 @@
+date=Tue Mar 01 01:20:12 PST 2016	sessionId=A1TLNLB9D87H6	remote=pool-71-112-134-248.pitbpa.east.verizon.net	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=

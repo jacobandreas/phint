@@ -1,0 +1,1 @@
+date=Mon Feb 29 19:41:20 PST 2016	sessionId=A1067MT5UGN8Z8	remote=h98.122.28.71.dynamic.ip.windstream.net	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=

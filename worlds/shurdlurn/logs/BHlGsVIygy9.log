@@ -1,0 +1,1 @@
+date=Mon Feb 29 05:51:43 PST 2016	sessionId=BHlGsVIygy9	remote=104.192.190.46	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=

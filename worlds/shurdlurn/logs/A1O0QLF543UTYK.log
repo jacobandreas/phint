@@ -1,0 +1,4 @@
+date=Mon Feb 29 21:51:51 PST 2016	sessionId=A1O0QLF543UTYK	remote=45.33.130.25	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 21:52:40 PST 2016	sessionId=A1O0QLF543UTYK	remote=45.33.130.25	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 21:52:47 PST 2016	sessionId=A1O0QLF543UTYK	remote=45.33.130.25	format=lisp2json	query=(context (graph NaiveKnowledgeGraph ((string [[1],[2],[1],[2],[0],[3]]) (name b) (name c))))	response=
+date=Mon Feb 29 21:52:47 PST 2016	sessionId=A1O0QLF543UTYK	remote=45.33.130.25	format=lisp2json	query=down	response=(call edu.stanford.nlp.sempre.cubeworld.StacksWorld.wallToString (call context:edu.stanford.nlp.sempre.cubeworld.StacksWorld.removeTop (call context:edu.stanford.nlp.sempre.cubeworld.StacksWorld.getNonEmpty))) => (string [[],[],[],[],[],[]])

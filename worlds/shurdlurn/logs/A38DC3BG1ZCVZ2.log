@@ -1,0 +1,4 @@
+date=Mon Feb 29 18:32:38 PST 2016	sessionId=A38DC3BG1ZCVZ2	remote=104.200.154.48	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 18:34:54 PST 2016	sessionId=A38DC3BG1ZCVZ2	remote=104.200.154.48	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string littlehouse)))	response=
+date=Mon Feb 29 18:34:57 PST 2016	sessionId=A38DC3BG1ZCVZ2	remote=104.200.154.48	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string babynot)))	response=
+date=Mon Feb 29 18:34:58 PST 2016	sessionId=A38DC3BG1ZCVZ2	remote=104.200.154.48	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=

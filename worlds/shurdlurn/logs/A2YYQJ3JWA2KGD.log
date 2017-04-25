@@ -1,0 +1,1 @@
+date=Mon Feb 29 19:09:04 PST 2016	sessionId=A2YYQJ3JWA2KGD	remote=108-69-208-182.lightspeed.frokca.sbcglobal.net	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=

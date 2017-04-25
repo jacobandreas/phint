@@ -11,6 +11,7 @@ world:
   name: GymWorld
   env: Ant-v1
   #env: HalfCheetah-v1
+  #env: InvertedPendulum-v1
   train_fold: train
   test_fold: val
   #n_train: 1000
@@ -56,7 +57,7 @@ objective:
   discount: 0.99
   step_size: 0.01
   entropy_bonus: 0
-  n_train_batch: 20000
+  n_train_batch: 10000
 
 #trainer: 
 #  name: CurriculumTrainer

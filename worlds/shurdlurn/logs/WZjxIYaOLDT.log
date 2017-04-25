@@ -1,0 +1,8 @@
+date=Mon Feb 29 05:54:48 PST 2016	sessionId=WZjxIYaOLDT	remote=c-24-127-191-208.hsd1.mi.comcast.net	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 05:56:15 PST 2016	sessionId=WZjxIYaOLDT	remote=c-24-127-191-208.hsd1.mi.comcast.net	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string babystep)))	response=
+date=Mon Feb 29 05:56:18 PST 2016	sessionId=WZjxIYaOLDT	remote=c-24-127-191-208.hsd1.mi.comcast.net	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string pattern)))	response=
+date=Mon Feb 29 05:56:20 PST 2016	sessionId=WZjxIYaOLDT	remote=c-24-127-191-208.hsd1.mi.comcast.net	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string babynot)))	response=
+date=Mon Feb 29 05:56:21 PST 2016	sessionId=WZjxIYaOLDT	remote=c-24-127-191-208.hsd1.mi.comcast.net	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string babystack)))	response=
+date=Mon Feb 29 05:56:23 PST 2016	sessionId=WZjxIYaOLDT	remote=c-24-127-191-208.hsd1.mi.comcast.net	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 05:59:06 PST 2016	sessionId=WZjxIYaOLDT	remote=c-24-127-191-208.hsd1.mi.comcast.net	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 05:59:35 PST 2016	sessionId=WZjxIYaOLDT	remote=c-24-127-191-208.hsd1.mi.comcast.net	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=

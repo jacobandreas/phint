@@ -1,0 +1,1 @@
+date=Mon Feb 29 18:02:48 PST 2016	sessionId=mturkworkerID	remote=cpe-66-25-57-100.tx.res.rr.com	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=  (string [[3],[0],[0],[3],[1],[0]]|[[],[0],[0],[],[1],[0]])

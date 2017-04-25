@@ -1,0 +1,16 @@
+date=Mon Feb 29 20:43:52 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 20:44:18 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string babystep)))	response=
+date=Mon Feb 29 20:44:21 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string pattern)))	response=
+date=Mon Feb 29 20:44:24 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string babynot)))	response=
+date=Mon Feb 29 20:44:27 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string babystack)))	response=
+date=Mon Feb 29 20:44:29 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string littlehouse)))	response=
+date=Mon Feb 29 20:44:31 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 20:45:20 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 20:45:54 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 20:46:03 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 20:46:04 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 20:46:44 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 20:47:11 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 20:48:17 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 20:48:57 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 20:49:34 PST 2016	sessionId=A33KTU8KJ5CP2T	remote=101.63.217.132	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=

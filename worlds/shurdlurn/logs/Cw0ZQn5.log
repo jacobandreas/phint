@@ -1,0 +1,10 @@
+date=Mon Feb 29 10:43:36 PST 2016	sessionId=Cw0ZQn5	remote=sidawun.stanford.edu	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 10:43:45 PST 2016	sessionId=Cw0ZQn5	remote=sidawun.stanford.edu	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 21:34:39 PST 2016	sessionId=Cw0ZQn5	remote=sidawun.stanford.edu	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 21:34:42 PST 2016	sessionId=Cw0ZQn5	remote=sidawun.stanford.edu	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string pattern)))	response=
+date=Mon Feb 29 21:34:42 PST 2016	sessionId=Cw0ZQn5	remote=sidawun.stanford.edu	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string triangle)))	response=
+date=Mon Feb 29 21:34:43 PST 2016	sessionId=Cw0ZQn5	remote=sidawun.stanford.edu	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string babystack)))	response=
+date=Mon Feb 29 21:34:43 PST 2016	sessionId=Cw0ZQn5	remote=sidawun.stanford.edu	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string pattern)))	response=
+date=Mon Feb 29 21:34:43 PST 2016	sessionId=Cw0ZQn5	remote=sidawun.stanford.edu	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string remove)))	response=
+date=Mon Feb 29 21:34:44 PST 2016	sessionId=Cw0ZQn5	remote=sidawun.stanford.edu	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string babystep)))	response=
+date=Mon Feb 29 21:34:44 PST 2016	sessionId=Cw0ZQn5	remote=sidawun.stanford.edu	format=lisp2json	query=(execute (call edu.stanford.nlp.sempre.cubeworld.StacksWorld.getLevel (string littlehouse)))	response=
