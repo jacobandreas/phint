@@ -132,6 +132,7 @@ class CurriculumTrainer(object):
 
                 if i_iter % (n_update * 100) == 0 and eval_thunk is not None:
                     eval_thunk()
+                    model.load(self.config.name, self.session)
 
                 #logging.info("[probs] %s", task_probs)
                 logging.info("[mean] %f" % np.mean(scores))

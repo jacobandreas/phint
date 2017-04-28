@@ -7,7 +7,7 @@ import models
 from objectives import Reinforce, Ppo, Cloning
 import trainers
 from evaluators.zero_shot import ZeroShotEvaluator
-from evaluators.adaptation import AdaptationEvaluator
+from evaluators.adaptation import AdaptationEvaluator, RllAdaptationEvaluator
 
 import logging
 import numpy as np
@@ -18,31 +18,43 @@ import tensorflow as tf
 import traceback
 import yaml
 
+from trainers import RlLabTrainer
+
 def main():
     config = configure()
     world = worlds.load(config)
     guide = guides.load(config, world)
-    model = models.load(config, world, guide)
-    objective = Reinforce(config, model)
-    #objective = Cloning(config, model)
 
-    session = tf.Session()
+    # training pieces
+    graph = tf.Graph()
+    session = tf.Session(graph=graph)
+    with graph.as_default(), session.as_default():
+        model = models.load(config, world, guide)
+        #objective = Reinforce(config, model)
+        objective = None
+        # TODO
+        #trainer = trainers.load(config, session)
+        trainer = RlLabTrainer(config, world, model, session)
 
+    # evaluation pieces
+    eval_graph = tf.Graph()
+    eval_session = tf.Session(graph=eval_graph)
+    with open("config.yaml") as config_f:
+        config_copy = Struct(**yaml.load(config_f))
+    config_copy.model.controller.param_ling = False
+    config_copy.model.controller.param_task = True
+    with eval_graph.as_default(), eval_session.as_default():
+        ad_model = models.load(config_copy, world, guide)
+        ad_evaluator = RllAdaptationEvaluator(config_copy, world, ad_model, eval_session)
     def _evaluate():
-        with open("config.yaml") as config_f:
-            config_copy = Struct(**yaml.load(config_f))
-        zs_evaluator = ZeroShotEvaluator(config_copy, session)
-        zs_evaluator.evaluate(world, model)
-
-        config_copy.model.controller.param_ling = False
-        config_copy.model.controller.param_task = True
-        ad_evaluator = AdaptationEvaluator(config_copy, session)
-        ad_objective = Reinforce(config_copy, model)
-        ad_evaluator.evaluate(world, model, ad_objective)
+        #zs_evaluator = ZeroShotEvaluator(config_copy, session)
+        #zs_evaluator.evaluate(world, model)
+        with eval_graph.as_default(), eval_session.as_default():
+            ad_evaluator.evaluate(world, ad_model)
 
     if config.train:
-        trainer = trainers.load(config, session)
-        trainer.train(world, model, objective, _evaluate if config.eval else None)
+        with graph.as_default(), session.as_default():
+            trainer.train(world, model, objective, _evaluate if config.eval else None)
 
     if config.eval:
         _evaluate()

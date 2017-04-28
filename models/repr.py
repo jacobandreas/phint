@@ -11,12 +11,8 @@ import os
 ModelState = namedtuple("ModelState", ["task_id", "hint"])
 
 class EmbeddingController(object):
-    def __init__(self, config, t_obs, t_task, world, guide):
+    def __init__(self, config, t_obs, t_task, t_hint, world, guide):
         self.guide = guide
-
-        self.t_hint = tf.placeholder(tf.int32, shape=(None, None))
-        self.t_len = tf.placeholder(tf.int32, shape=(None,))
-        #self.t_task = tf.placeholder(tf.int32, shape=(None,))
 
         #with tf.variable_scope("ling_repr"):
         #    t_embed = _embed(self.t_hint, guide.n_vocab, config.model.controller.n_embed)
@@ -24,7 +20,7 @@ class EmbeddingController(object):
         #    _, t_final_hidden = tf.nn.dynamic_rnn(cell, t_embed, self.t_len, dtype=tf.float32)
         #    t_ling_repr = t_final_hidden
         with tf.variable_scope("ling_repr"):
-            t_embed = _embed(self.t_hint, guide.n_vocab, config.model.controller.n_hidden)
+            t_embed = _embed(t_hint, guide.n_vocab, config.model.controller.n_hidden)
             t_ling_repr = tf.reduce_mean(t_embed, axis=1)
 
         with tf.variable_scope("task_repr") as repr_scope:
@@ -44,29 +40,22 @@ class EmbeddingController(object):
             self.t_repr = tf.zeros_like(t_task_repr)
         self.t_ling_repr = t_ling_repr
 
-        with tf.variable_scope("ling_decoder"):
-            cell = tf.contrib.rnn.GRUCell(config.model.controller.n_hidden)
-            cell = tf.contrib.rnn.OutputProjectionWrapper(cell, guide.n_vocab)
-            t_dec_embed = t_embed[:, :-1, :]
-            t_dec_target = self.t_hint[:, 1:]
-            t_dec_pred, _ = tf.nn.dynamic_rnn(cell, t_dec_embed, initial_state=self.t_repr)
-            self.t_dec_loss = tf.reduce_sum(
-                    tf.nn.sparse_softmax_cross_entropy_with_logits(
-                        labels=t_dec_target,
-                        logits=t_dec_pred),
-                    axis=1)
+        self.t_dec_loss = 0
+        # TODO(jda) including this causes segfaults on the server
+        #with tf.variable_scope("ling_decoder"):
+        #    cell = tf.contrib.rnn.GRUCell(config.model.controller.n_hidden)
+        #    cell = tf.contrib.rnn.OutputProjectionWrapper(cell, guide.n_vocab)
+        #    t_dec_embed = t_embed[:, :-1, :]
+        #    t_dec_target = self.t_hint[:, 1:]
+        #    t_dec_pred, _ = tf.nn.dynamic_rnn(cell, t_dec_embed, initial_state=self.t_repr)
+        #    self.t_dec_loss = tf.reduce_sum(
+        #            tf.nn.sparse_softmax_cross_entropy_with_logits(
+        #                labels=t_dec_target,
+        #                logits=t_dec_pred),
+        #            axis=1)
 
     def init(self, inst, obs):
         return [ModelState(i.task.id, self.guide.guide_for(i.task)) for i in inst]
-
-    def feed(self, state):
-        #max_len = max(len(s.hint) for s in state)
-        max_len = self.guide.max_len
-        return {
-            self.t_hint: [s.hint + (0,)*(max_len-len(s.hint)) for s in state],
-            #self.t_task: [s.task_id for s in state],
-            self.t_len: [len(s.hint) for i in state]
-        }
 
 class Actor(object):
     def __init__(self, config, t_obs, t_repr, world, guide):
@@ -106,10 +95,15 @@ class ReprModel(object):
     def prepare(self, config, world, guide):
         self.t_obs = tf.placeholder(tf.float32, shape=(None, world.n_obs))
         self.t_task = tf.placeholder(tf.int32, shape=(None,))
+        self.t_hint = tf.placeholder(tf.int32, shape=(None, None))
         with tf.variable_scope("ReprModel") as scope:
-            self.controller = EmbeddingController(config, self.t_obs, self.t_task, world, guide)
-            self.actor = Actor(config, self.t_obs, self.controller.t_repr, world, guide)
-            self.critic = Critic(config, self.t_obs, self.controller.t_repr, self.t_task, world, guide)
+            self.controller = EmbeddingController(
+                    config, self.t_obs, self.t_task, self.t_hint, world, guide)
+            self.actor = Actor(
+                    config, self.t_obs, self.controller.t_repr, world, guide)
+            self.critic = Critic(
+                    config, self.t_obs, self.controller.t_repr, self.t_task,
+                    world, guide)
 
             self.t_action_param = self.actor.t_action_param
             self.t_action_temp = tf.get_variable(
@@ -131,23 +125,26 @@ class ReprModel(object):
         if dec_ling > 0:
             self.t_loss_extra += tf.reduce_mean(dec_ling * self.controller.t_dec_loss)
 
-    def prepare_sym(self, obs_var, task_id_var):
+    def prepare_sym(self, obs_var, task_id_var, hint_var):
         with tf.variable_scope("ReprModel", reuse=True) as scope:
-            controller = EmbeddingController(self.config, obs_var, task_id_var, self.world, self.guide)
-            actor = Actor(self.config, obs_var, controller.t_repr, self.world, self.guide)
+            controller = EmbeddingController(
+                    self.config, obs_var, task_id_var, hint_var, self.world,
+                    self.guide)
+            actor = Actor(
+                    self.config, obs_var, controller.t_repr, self.world,
+                    self.guide)
         return actor.t_action_param, self.t_action_temp
-        #return tf.nn.softmax(actor.t_action_param)
-
 
     def init(self, task, obs):
         return self.controller.init(task, obs)
 
     def feed(self, obs, mstate):
+        max_len = self.guide.max_len
         out = {
             self.t_obs: obs,
-            self.t_task: [s.task_id for s in mstate]
+            self.t_task: [s.task_id for s in mstate],
+            self.t_hint: [s.hint + (0,)*(max_len-len(s.hint)) for s in mstate],
         }
-        out.update(self.controller.feed(mstate))
         return out
 
     def act(self, obs, mstate, task, session):
@@ -162,7 +159,6 @@ class ReprModel(object):
         action_p, action_t, rep = session.run(
                 [self.t_action_param, self.t_action_temp, self.controller.t_repr], 
                 self.feed(obs, mstate))
-        #print rep[:5, :5]
         return action_p, action_t, mstate
 
     def save(self, session):

@@ -9,13 +9,13 @@ from collections import namedtuple
 import os
 import numpy as np
 
-GymTask = namedtuple("GymTask", ["id"])
+GymTask = namedtuple("GymTask", ["id", "hint"])
 
 class GymWorld(object):
     def __init__(self, config):
         rllab_dir = os.path.join(config.experiment_dir, "rllab")
         os.mkdir(rllab_dir)
-        logger.set_snapshot_dir(rllab_dir)
+        #logger.set_snapshot_dir(rllab_dir)
 
         self.env_name = config.world.env
         self.rll_env = GymEnv(self.env_name, force_reset=True)
@@ -25,7 +25,16 @@ class GymWorld(object):
         self.vocab = util.Index()
         self.task_index = util.Index()
         self.n_tasks = 4
+        #self.n_tasks = 2
         self.random = util.next_random()
+
+        self.tasks = []
+        for i in range(self.n_tasks):
+            task = GymTask(i, (self.vocab.index(str(i)),))
+            self.task_index.index(task)
+            self.tasks.append(task)
+
+        self.n_vocab = len(self.vocab)
 
         self._reset_counter = [0]
 
@@ -40,7 +49,8 @@ class GymWorld(object):
         self.n_obs = spec.observation_space.flat_dim
 
     def sample_train(self, p=None):
-        return GymInstance(GymTask(np.random.randint(self.n_tasks)), None, None)
+        task_id = np.random.randint(self.n_tasks)
+        return GymInstance(self.tasks[task_id], None, None)
 
     def reset(self, insts):
         assert len(insts) == 1

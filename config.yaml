@@ -9,6 +9,7 @@ load: train
 
 world: 
   name: GymWorld
+  #env: CartPole-v0
   env: Ant-v1
   #env: HalfCheetah-v1
   #env: InvertedPendulum-v1
@@ -37,8 +38,8 @@ model:
     update: discrete
     gumbel: true
 
-    param_ling: false
-    param_task: true
+    param_ling: true
+    param_task: false
 
     encode_ling: 0 # 0.01
     decode_ling: 0 # 0.01
@@ -57,7 +58,8 @@ objective:
   discount: 0.99
   step_size: 0.01
   entropy_bonus: 0
-  n_train_batch: 10000
+  n_train_batch: 20000
+  #n_train_batch: 1000
 
 #trainer: 
 #  name: CurriculumTrainer
