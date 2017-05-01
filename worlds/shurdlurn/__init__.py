@@ -137,6 +137,8 @@ class ShurdlurnWorld(object):
         self.n_test = len(self.test_ids)
         self.tasks = tasks
         self.random = util.next_random()
+        self.is_discrete = True
+        self.n_vocab = len(self.vocab)
 
     def make_demo(self, state):
         demo = []

@@ -31,10 +31,9 @@ def main():
     with graph.as_default(), session.as_default():
         model = models.load(config, world, guide)
         #objective = Reinforce(config, model)
-        objective = None
-        # TODO
-        #trainer = trainers.load(config, session)
-        trainer = RlLabTrainer(config, world, model, session)
+        objective = Cloning(config, model)
+        trainer = trainers.load(config, session)
+        #trainer = RlLabTrainer(config, world, model, guide, session)
 
     # evaluation pieces
     eval_graph = tf.Graph()
@@ -45,12 +44,19 @@ def main():
     config_copy.model.controller.param_task = True
     with eval_graph.as_default(), eval_session.as_default():
         ad_model = models.load(config_copy, world, guide)
-        ad_evaluator = RllAdaptationEvaluator(config_copy, world, ad_model, eval_session)
+        ad_objective = Reinforce(config_copy, ad_model)
+        ad_evaluator = AdaptationEvaluator(config_copy, world, ad_model, ad_objective, guide, eval_session)
+        #ad_evaluator = RllAdaptationEvaluator(config_copy, world, ad_model, guide, eval_session)
     def _evaluate():
         #zs_evaluator = ZeroShotEvaluator(config_copy, session)
         #zs_evaluator.evaluate(world, model)
         with eval_graph.as_default(), eval_session.as_default():
-            ad_evaluator.evaluate(world, ad_model)
+            ad_evaluator.evaluate()
+
+
+    # rllab might have screwed with this
+    setup_logging(config)
+    logging.getLogger().setLevel(logging.DEBUG)
 
     if config.train:
         with graph.as_default(), session.as_default():
@@ -70,7 +76,9 @@ def configure():
             "Experiment %s already exists!" % config.experiment_dir
     os.mkdir(config.experiment_dir)
 
-    # set up logging
+    return config
+
+def setup_logging(config):
     log_name = os.path.join(config.experiment_dir, "run.log")
     #logging.basicConfig(filename=log_name, level=logging.DEBUG,
     logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
@@ -82,8 +90,6 @@ def configure():
 
     logging.info("BEGIN")
     logging.info(str(config))
-
-    return config
 
 if __name__ == "__main__":
     main()

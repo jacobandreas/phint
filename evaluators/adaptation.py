@@ -13,31 +13,34 @@ from trainers.rllab_wrapper import RllEnvWrapper, RllPolicyWrapper
 import rllab.misc.logger as rll_logger
 
 class AdaptationEvaluator(object):
-    def __init__(self, config, session):
+    def __init__(self, config, world, model, objective, guide, session):
         self.config = config
+        self.world = world
+        self.model = model
+        self.objective = objective
+        self.guide = guide
         self.session = session
 
-    def evaluate(self, world, model, objective):
+    def evaluate(self):
         logging.info("[ADAPTATION EVAL]")
-        assert False, "don't reuse model"
         
         n_batch = self.config.trainer.n_rollout_batch
-        for i_task in range(world.n_test):
+        for i_task in range(self.world.n_test):
             self.session.run(tf.global_variables_initializer())
-            model.load(self.config.load, self.session)
-            probs = np.zeros(world.n_test)
+            self.model.load(self.config.load, self.session)
+            probs = np.zeros(self.world.n_test)
             probs[i_task] = 1
             updates = 0
             success = False
             while updates < 100:
-                inst = [world.sample_test(probs) for _ in range(n_batch)]
+                inst = [self.world.sample_test(probs) for _ in range(n_batch)]
                 buf, rew, comp = _do_rollout(
-                        self.config, world, inst, model, n_batch, self.session)
-                objective.experience(buf)
-                if not objective.ready():
+                        self.config, self.world, inst, self.model, n_batch, self.session)
+                self.objective.experience(buf)
+                if not self.objective.ready():
                     continue
                 updates += 1
-                objective.train(self.session, repr_only=True)
+                self.objective.train(self.session, repr_only=True)
                 if np.mean(comp) == 1:
                     logging.info("[ad success] %d %d", i_task, updates)
                     success = True
@@ -51,10 +54,10 @@ class AdaptationEvaluator(object):
         logging.info("")
 
 class RllAdaptationEvaluator(object):
-    def __init__(self, config, world, model, session):
+    def __init__(self, config, world, model, guide, session):
         self.config = config
         self.session = session
-        env = TfEnv(RllEnvWrapper(world))
+        env = TfEnv(RllEnvWrapper(world, guide))
         policy = RllPolicyWrapper(model, env.spec, env._wrapped_env, session)
         baseline = LinearFeatureBaseline(env.spec)
         algo_ctor = globals()[self.config.trainer.algo]
@@ -70,11 +73,8 @@ class RllAdaptationEvaluator(object):
         )
         self.model = model
 
-    def evaluate(self, world, model):
+    def evaluate(self):
         self.algo.start_worker()
-        #for i_task in range(world.n_test):
-            #probs = np.zeros(world.n_test)
-            #probs[i_task] = 1
         self.session.run(tf.global_variables_initializer())
         self.model.load(self.config.load, self.session)
         for i_iter in range(10):

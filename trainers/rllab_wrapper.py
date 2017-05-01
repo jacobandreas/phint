@@ -28,9 +28,10 @@ import sys
 import os
 
 class RllEnvWrapper(RllEnv):
-    def __init__(self, underlying):
+    def __init__(self, underlying, guide):
         self.underlying = underlying
         self.active_instance = None
+        self.max_hint_len = guide.max_len
         super(RllEnvWrapper, self).__init__()
         self.reset()
 
@@ -48,24 +49,29 @@ class RllEnvWrapper(RllEnv):
         return Product(
                 Box(-bound, bound),
                 Box(np.asarray([0]), np.asarray([self.underlying.n_tasks])),
-                Box(np.asarray([0]), np.asarray([self.underlying.n_vocab])))
+                Box(
+                    np.asarray([0] * self.max_hint_len),
+                    np.asarray([self.underlying.n_vocab] * self.max_hint_len)))
 
     def reset(self):
         self.active_instance = self.underlying.sample_train()
         underlying_obs, = self.underlying.reset([self.active_instance])
-        obs = (
-                underlying_obs,
-                [self.active_instance.task.id],
-                self.active_instance.task.hint)
+        padded_hint = (
+                self.active_instance.task.hint 
+                + (0,) * (self.max_hint_len - len(self.active_instance.task.hint)))
+        obs = (underlying_obs, [self.active_instance.task.id], padded_hint)
         return obs
 
     def step(self, action):
         assert self.active_instance is not None
         features, rewards, stops = self.underlying.step([action], [self.active_instance])
+        padded_hint = (
+                self.active_instance.task.hint 
+                + (0,) * (self.max_hint_len - len(self.active_instance.task.hint)))
         obs = (
                 features[0], 
                 [self.active_instance.task.id],
-                self.active_instance.task.hint)
+                padded_hint)
         return obs, rewards[0], stops[0], {}
 
     def horizon(self):
@@ -79,7 +85,7 @@ class RllPolicyWrapper(RllPolicy, Serializable):
 
         self.underlying = underlying
         self.env_spec = env_spec
-        if isinstance(env_spec.action_space, Discrete):
+        if env.underlying.is_discrete:
             self.dist = Categorical(env_spec.action_space.n)
             self.is_discrete = True
         else:
@@ -108,7 +114,7 @@ class RllPolicyWrapper(RllPolicy, Serializable):
         t_param, t_temp = self.underlying.prepare_sym(
                 true_obs_var, task_id_var, hint_var)
         if self.is_discrete:
-            return {"prob": tf.nn.softmax(t_mean)}
+            return {"prob": tf.nn.softmax(t_param)}
         else:
             return {"mean": t_param, "log_std": t_temp}
 
@@ -142,7 +148,7 @@ class RllPolicyWrapper(RllPolicy, Serializable):
 
         if self.is_discrete:
             action_p = np.exp(action_p)
-            action_p /= np.sum(action_p, axis=1)
+            action_p /= np.sum(action_p, axis=1)[:, np.newaxis]
             actions = [self.action_space.weighted_sample(p) for p in action_p]
             return actions, {
                 "prob": action_p,
@@ -164,10 +170,10 @@ class RllBaselineWrapper(RllBaseline):
         super(RllBaseline, self).__init__()
 
 class RlLabTrainer(object):
-    def __init__(self, config, world, model, session):
+    def __init__(self, config, world, model, guide, session):
         self.config = config
         self.session = session
-        env = TfEnv(RllEnvWrapper(world))
+        env = TfEnv(RllEnvWrapper(world, guide))
         policy = RllPolicyWrapper(model, env.spec, env._wrapped_env, session)
         baseline = LinearFeatureBaseline(env.spec)
         algo_ctor = globals()[self.config.trainer.algo]

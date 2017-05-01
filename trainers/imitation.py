@@ -12,7 +12,7 @@ class ImitationTrainer(object):
         self.config = config
         self.session = session
 
-    def train(self, world, model, objective):
+    def train(self, world, model, objective, eval_thunk=None):
         self.session.run(tf.global_variables_initializer())
         n_batch = self.config.trainer.n_rollout_batch
 
@@ -60,3 +60,6 @@ class ImitationTrainer(object):
                 logging.info("")
                 err = 0
                 model.save(self.session)
+                if i_iter % (n_update * 50) == 0 and eval_thunk is not None:
+                    eval_thunk()
+                    model.load(self.config.name, self.session)

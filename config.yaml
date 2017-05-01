@@ -1,22 +1,26 @@
-name: train
+name: train3
 train: true
 eval: true
-load: train
+load: train3
 #name: eval
 #train: false
 #load: train_backup
 #eval: true
 
+#world: 
+#  name: GymWorld
+#  env: Ant-v1
+#  train_fold: train
+#  test_fold: val
+#  #n_train: 1000
+#  n_test: 10
+
 world: 
-  name: GymWorld
-  #env: CartPole-v0
-  env: Ant-v1
-  #env: HalfCheetah-v1
-  #env: InvertedPendulum-v1
+  name: ShurdlurnWorld
   train_fold: train
   test_fold: val
-  #n_train: 1000
-  n_test: 10
+  #n_train: 1
+  n_test: 20
 
 guide:
   name: SketchGuide
@@ -26,8 +30,8 @@ model:
   intrinsic_bonus: 0
   actor:
     type: discrete
-    #n_hidden: [128, 128]
-    n_hidden: [32, 32]
+    #n_hidden: [32, 32]
+    n_hidden: [64]
     #ret_bias: -3
     ret_bias: 0
 
@@ -35,14 +39,14 @@ model:
     type: att
     n_hidden: 128
     n_embed: 64
-    update: discrete
-    gumbel: true
+    #update: discrete
+    #gumbel: true
 
     param_ling: true
     param_task: false
 
-    encode_ling: 0 # 0.01
-    decode_ling: 0 # 0.01
+    encode_ling: 0
+    decode_ling: 0
 
   critic:
     type: linear
@@ -56,25 +60,24 @@ model:
 
 objective:
   discount: 0.99
+  #step_size: 0.01
   step_size: 0.01
-  entropy_bonus: 0
-  n_train_batch: 20000
-  #n_train_batch: 1000
+  entropy_bonus: 0.01
+  #n_train_batch: 20000
+  n_train_batch: 10000
 
-#trainer: 
-#  name: CurriculumTrainer
-#  #name: ImitationTrainer
-#  max_rollout_len: 100
-#  n_update: 100
-#  n_rollout_batch: 100
-#  parallel: 4
-#  log_each_task: false
-#  resample_every: 5
-#  switch_iter: 10000
+trainer: 
+  #name: CurriculumTrainer
+  name: ImitationTrainer
+  max_rollout_len: 100
+  n_update: 100
+  n_rollout_batch: 100
+  log_each_task: false
+  resample_every: 5
+  switch_iter: 10000
 
-trainer:
-  name: RlLabTrainer
-  algo: TRPO
-  #algo: VPG
-  max_rollout_len: 1000
-  n_iters: 10000
+#trainer:
+#  name: RlLabTrainer
+#  algo: TRPO
+#  max_rollout_len: 20
+#  n_iters: 10000
