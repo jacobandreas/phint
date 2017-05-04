@@ -57,7 +57,7 @@ class RllAdaptationEvaluator(object):
     def __init__(self, config, world, model, guide, session):
         self.config = config
         self.session = session
-        env = TfEnv(RllEnvWrapper(world, guide))
+        env = TfEnv(RllEnvWrapper(world, guide, use_val=True))
         policy = RllPolicyWrapper(model, env.spec, env._wrapped_env, session)
         baseline = LinearFeatureBaseline(env.spec)
         algo_ctor = globals()[self.config.trainer.algo]
@@ -77,7 +77,7 @@ class RllAdaptationEvaluator(object):
         self.algo.start_worker()
         self.session.run(tf.global_variables_initializer())
         self.model.load(self.config.load, self.session)
-        for i_iter in range(10):
+        for i_iter in range(20):
             with rll_logger.prefix("EVAL itr #%d | " % i_iter):
                 paths = self.algo.obtain_samples(i_iter)
                 samples_data = self.algo.process_samples(i_iter, paths)
@@ -85,3 +85,4 @@ class RllAdaptationEvaluator(object):
                 self.algo.optimize_policy(i_iter, samples_data)
                 rll_logger.dump_tabular(with_prefix=True)
         self.algo.shutdown_worker()
+        self.model.load(self.config.load, self.session)

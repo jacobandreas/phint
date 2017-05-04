@@ -28,10 +28,11 @@ import sys
 import os
 
 class RllEnvWrapper(RllEnv):
-    def __init__(self, underlying, guide):
+    def __init__(self, underlying, guide, use_val=False):
         self.underlying = underlying
         self.active_instance = None
         self.max_hint_len = guide.max_len
+        self.use_val = use_val
         super(RllEnvWrapper, self).__init__()
         self.reset()
 
@@ -54,7 +55,10 @@ class RllEnvWrapper(RllEnv):
                     np.asarray([self.underlying.n_vocab] * self.max_hint_len)))
 
     def reset(self):
-        self.active_instance = self.underlying.sample_train()
+        if self.use_val:
+            self.active_instance = self.underlying.sample_val()
+        else:
+            self.active_instance = self.underlying.sample_train()
         underlying_obs, = self.underlying.reset([self.active_instance])
         padded_hint = (
                 self.active_instance.task.hint 

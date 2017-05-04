@@ -32,8 +32,8 @@ def main():
         model = models.load(config, world, guide)
         #objective = Reinforce(config, model)
         objective = Cloning(config, model)
-        trainer = trainers.load(config, session)
-        #trainer = RlLabTrainer(config, world, model, guide, session)
+        #trainer = trainers.load(config, session)
+        trainer = RlLabTrainer(config, world, model, guide, session)
 
     # evaluation pieces
     eval_graph = tf.Graph()
@@ -45,8 +45,8 @@ def main():
     with eval_graph.as_default(), eval_session.as_default():
         ad_model = models.load(config_copy, world, guide)
         ad_objective = Reinforce(config_copy, ad_model)
-        ad_evaluator = AdaptationEvaluator(config_copy, world, ad_model, ad_objective, guide, eval_session)
-        #ad_evaluator = RllAdaptationEvaluator(config_copy, world, ad_model, guide, eval_session)
+        #ad_evaluator = AdaptationEvaluator(config_copy, world, ad_model, ad_objective, guide, eval_session)
+        ad_evaluator = RllAdaptationEvaluator(config_copy, world, ad_model, guide, eval_session)
     def _evaluate():
         #zs_evaluator = ZeroShotEvaluator(config_copy, session)
         #zs_evaluator.evaluate(world, model)
