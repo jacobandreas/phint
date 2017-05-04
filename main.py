@@ -38,7 +38,8 @@ def main():
     # evaluation pieces
     eval_graph = tf.Graph()
     eval_session = tf.Session(graph=eval_graph)
-    with open("config.yaml") as config_f:
+    config_name = sys.argv[1]
+    with open(config_name) as config_f:
         config_copy = Struct(**yaml.load(config_f))
     config_copy.model.controller.param_ling = False
     config_copy.model.controller.param_task = True
@@ -67,7 +68,8 @@ def main():
 
 def configure():
     # load config
-    with open("config.yaml") as config_f:
+    config_name = sys.argv[1]
+    with open(config_name) as config_f:
         config = Struct(**yaml.load(config_f))
 
     # set up experiment

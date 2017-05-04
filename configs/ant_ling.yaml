@@ -1,0 +1,43 @@
+name: ant_ling
+load: ant_ling
+train: true
+eval: true
+
+world: 
+  name: GymWorld
+  train_fold: train
+  test_fold: val
+
+guide:
+  name: SketchGuide
+
+model: 
+  name: ReprModel
+  intrinsic_bonus: 0
+  actor:
+    n_hidden: [32, 32]
+    ret_bias: 0
+
+  controller:
+    n_hidden: 128
+    n_embed: 32
+    param_ling: false
+    param_task: true
+    encode_ling: 0
+    decode_ling: 0
+
+  critic:
+    type: linear
+    by_task: true
+
+objective:
+  discount: 0.99
+  step_size: 0.01
+  entropy_bonus: 0.01
+  n_train_batch: 20000
+
+trainer:
+  name: RlLabTrainer
+  algo: TRPO
+  max_rollout_len: 1000
+  n_iters: 10000
