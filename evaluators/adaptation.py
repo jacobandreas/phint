@@ -6,11 +6,11 @@ import tensorflow as tf
 
 import models
 
-from sandbox.rocky.tf.envs.base import TfEnv
-from sandbox.rocky.tf.algos.trpo import TRPO
-from rllab.baselines.linear_feature_baseline import LinearFeatureBaseline
-from trainers.rllab_wrapper import RllEnvWrapper, RllPolicyWrapper
-import rllab.misc.logger as rll_logger
+#from sandbox.rocky.tf.envs.base import TfEnv
+#from sandbox.rocky.tf.algos.trpo import TRPO
+#from rllab.baselines.linear_feature_baseline import LinearFeatureBaseline
+#from trainers.rllab_wrapper import RllEnvWrapper, RllPolicyWrapper
+#import rllab.misc.logger as rll_logger
 
 class AdaptationEvaluator(object):
     def __init__(self, config, world, model, objective, session):
@@ -52,36 +52,36 @@ class AdaptationEvaluator(object):
 
         logging.info("")
 
-class RllAdaptationEvaluator(object):
-    def __init__(self, config, world, model, session):
-        self.config = config
-        self.session = session
-        env = TfEnv(RllEnvWrapper(world, use_val=True))
-        policy = RllPolicyWrapper(model, env.spec, env._wrapped_env, session)
-        baseline = LinearFeatureBaseline(env.spec)
-        algo_ctor = globals()[self.config.trainer.algo]
-        self.algo = algo_ctor(
-            env=env,
-            policy=policy,
-            baseline=baseline,
-            batch_size=self.config.objective.n_train_batch,
-            max_path_length=self.config.trainer.max_rollout_len,
-            discount=self.config.objective.discount,
-            step_size=self.config.objective.step_size,
-            entropy_bonus=self.config.objective.entropy_bonus,
-        )
-        self.model = model
-
-    def evaluate(self):
-        self.algo.start_worker()
-        self.session.run(tf.global_variables_initializer())
-        self.model.load(self.config.load, self.session)
-        for i_iter in range(20):
-            with rll_logger.prefix("EVAL itr #%d | " % i_iter):
-                paths = self.algo.obtain_samples(i_iter)
-                samples_data = self.algo.process_samples(i_iter, paths)
-                self.algo.log_diagnostics(paths)
-                self.algo.optimize_policy(i_iter, samples_data)
-                rll_logger.dump_tabular(with_prefix=True)
-        self.algo.shutdown_worker()
-        self.model.load(self.config.load, self.session)
+#class RllAdaptationEvaluator(object):
+#    def __init__(self, config, world, model, session):
+#        self.config = config
+#        self.session = session
+#        env = TfEnv(RllEnvWrapper(world, use_val=True))
+#        policy = RllPolicyWrapper(model, env.spec, env._wrapped_env, session)
+#        baseline = LinearFeatureBaseline(env.spec)
+#        algo_ctor = globals()[self.config.trainer.algo]
+#        self.algo = algo_ctor(
+#            env=env,
+#            policy=policy,
+#            baseline=baseline,
+#            batch_size=self.config.objective.n_train_batch,
+#            max_path_length=self.config.trainer.max_rollout_len,
+#            discount=self.config.objective.discount,
+#            step_size=self.config.objective.step_size,
+#            entropy_bonus=self.config.objective.entropy_bonus,
+#        )
+#        self.model = model
+#
+#    def evaluate(self):
+#        self.algo.start_worker()
+#        self.session.run(tf.global_variables_initializer())
+#        self.model.load(self.config.load, self.session)
+#        for i_iter in range(20):
+#            with rll_logger.prefix("EVAL itr #%d | " % i_iter):
+#                paths = self.algo.obtain_samples(i_iter)
+#                samples_data = self.algo.process_samples(i_iter, paths)
+#                self.algo.log_diagnostics(paths)
+#                self.algo.optimize_policy(i_iter, samples_data)
+#                rll_logger.dump_tabular(with_prefix=True)
+#        self.algo.shutdown_worker()
+#        self.model.load(self.config.load, self.session)

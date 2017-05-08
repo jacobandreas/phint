@@ -6,7 +6,7 @@ import models
 from objectives import Reinforce, Ppo, Cloning
 import trainers
 from evaluators.zero_shot import ZeroShotEvaluator
-from evaluators.adaptation import AdaptationEvaluator, RllAdaptationEvaluator
+from evaluators.adaptation import AdaptationEvaluator #, RllAdaptationEvaluator
 
 import logging
 import numpy as np
@@ -17,7 +17,7 @@ import tensorflow as tf
 import traceback
 import yaml
 
-from trainers import RlLabTrainer
+#from trainers import RlLabTrainer
 
 def main():
     config = configure()
