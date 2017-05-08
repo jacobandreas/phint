@@ -1,0 +1,50 @@
+name: minicraft_task
+load: minicraft_task
+train: true
+eval: true
+
+world: 
+  name: MinicraftWorld
+  train_fold: train
+  test_fold: val
+
+guide:
+  name: SketchGuide
+
+model: 
+  name: ReprModel
+  intrinsic_bonus: 0
+  actor:
+    n_hidden: [64, 64]
+    ret_bias: 0
+
+  controller:
+    n_hidden: 128
+    n_embed: 64
+    param_ling: false
+    param_task: true
+    encode_ling: 0
+    decode_ling: 0
+
+  critic:
+    type: linear
+    by_task: true
+
+objective:
+  discount: 0.9
+  #step_size: 0.01
+  step_size: 0.001
+  entropy_bonus: 0.01
+  n_train_batch: 10000
+
+trainer:
+  #name: RlLabTrainer
+  #algo: VPG
+  name: CurriculumTrainer 
+  max_rollout_len: 100
+  n_iters: 10000
+  n_rollout_batch: 100
+  n_update: 100
+  resample_every: 1
+  switch_iter: 0
+  log_each_task: false
