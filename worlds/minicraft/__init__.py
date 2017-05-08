@@ -21,7 +21,7 @@ RIGHT = 3
 USE = 4
 N_ACTIONS = USE + 1
 
-MinicraftTask = namedtuple("MinicraftTask", ["goal", "hint"])
+MinicraftTask = namedtuple("MinicraftTask", ["goal", "hint", "id"])
 
 def random_free(grid, random):
     pos = None
@@ -67,12 +67,12 @@ class MinicraftWorld(object):
         self.vocab = util.Index()
         with open("worlds/minicraft/hints.yaml") as hint_f:
             hints = yaml.load(hint_f)
-            for goal in hints:
+            for i_goal, goal in enumerate(hints):
                 _, arg = util.parse_fexp(goal)
                 assert arg in self.cookbook.index
                 hint = hints[goal]
                 hint = tuple(self.vocab.index(h) for h in hint)
-                task = MinicraftTask(arg, hint)
+                task = MinicraftTask(arg, hint, i_goal)
                 self.tasks.append(task)
 
         self.n_obs = \
@@ -83,6 +83,9 @@ class MinicraftWorld(object):
         self.n_act = N_ACTIONS
         self.is_discrete = True
         self.n_tasks = len(self.tasks)
+        self.n_train = self.n_tasks - 1
+        self.n_val = 1
+        self.n_test = 1
         self.max_hint_len = 5
 
         self.non_grabbable_indices = self.cookbook.environment
@@ -93,6 +96,8 @@ class MinicraftWorld(object):
         self.water_index = self.cookbook.index["water"]
         self.stone_index = self.cookbook.index["stone"]
 
+        self.n_vocab = len(self.vocab)
+
         self.random = util.next_random()
 
     def sample_instance(self, p=None):
@@ -102,19 +107,38 @@ class MinicraftWorld(object):
         init_state = self.sample_state_with_goal(task.goal)
         return MinicraftInstance(task, init_state)
 
+    def sample_train(self, p=None):
+        #assert p is None
+        p = np.zeros(self.n_tasks)
+        p[:self.n_train] = 1
+        p /= p.sum()
+        return self.sample_instance(p)
+
+    def sample_val(self, p=None):
+        #assert p is None
+        p = np.zeros(self.n_tasks)
+        p[self.n_train:] = 1
+        p /= p.sum()
+        return self.sample_instance(p)
+
+    def sample_test(self, p=None):
+        return self.sample_val(p)
+
     def reset(self, tasks):
         return [t.state.features() for t in tasks]
 
     def step(self, actions, insts):
+        complete_rewards = self.complete(insts)
         features = []
         rewards = []
         stops = []
-        for a, t in zip(actions, insts):
+        for a, t, cr in zip(actions, insts, complete_rewards):
             reward, nstate = t.state.step(a)
             t.state = nstate
-            stop = False
+            #stop = False
+            stop = (cr > 0)
             features.append(nstate.features())
-            rewards.append(reward)
+            rewards.append(reward + cr)
             stops.append(stop)
         return features, rewards, stops
 

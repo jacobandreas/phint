@@ -5,7 +5,7 @@ import sys
 #    print >>sys.stderr, "Warning: unable to load Malmo"
 from minicraft import MinicraftWorld
 from shurdlurn import ShurdlurnWorld
-from gym import GymWorld
+#from gym import GymWorld
 
 def load(config):
     cls_name = config.world.name

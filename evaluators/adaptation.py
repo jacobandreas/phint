@@ -13,12 +13,11 @@ from trainers.rllab_wrapper import RllEnvWrapper, RllPolicyWrapper
 import rllab.misc.logger as rll_logger
 
 class AdaptationEvaluator(object):
-    def __init__(self, config, world, model, objective, guide, session):
+    def __init__(self, config, world, model, objective, session):
         self.config = config
         self.world = world
         self.model = model
         self.objective = objective
-        self.guide = guide
         self.session = session
 
     def evaluate(self):
@@ -49,15 +48,15 @@ class AdaptationEvaluator(object):
                 #    logging.info("[ad reward] %d %f", i_task, np.mean(rew))
                 #    logging.info("[ad complete] %d %f", i_task, np.mean(comp))
             if not success:
-                logging.info("[ad failure] %d", i_task)
+                logging.info("[ad failure] %d %f %f", i_task, np.mean(rew), np.mean(comp))
 
         logging.info("")
 
 class RllAdaptationEvaluator(object):
-    def __init__(self, config, world, model, guide, session):
+    def __init__(self, config, world, model, session):
         self.config = config
         self.session = session
-        env = TfEnv(RllEnvWrapper(world, guide, use_val=True))
+        env = TfEnv(RllEnvWrapper(world, use_val=True))
         policy = RllPolicyWrapper(model, env.spec, env._wrapped_env, session)
         baseline = LinearFeatureBaseline(env.spec)
         algo_ctor = globals()[self.config.trainer.algo]

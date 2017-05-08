@@ -12,13 +12,13 @@ from rllab.baselines.linear_feature_baseline import LinearFeatureBaseline
 from rllab.spaces import Box, Discrete, Product
 from sandbox.rocky.tf.distributions.categorical import Categorical
 from sandbox.rocky.tf.distributions.diagonal_gaussian import DiagonalGaussian
-from rllab.misc.instrument import run_experiment_lite
+#from rllab.misc.instrument import run_experiment_lite
 from rllab.core.serializable import Serializable
 import rllab.misc.logger as rll_logger
 
 from misc import util
 from models.repr import ModelState
-from worlds.gym import GymWorld
+#from worlds.gym import GymWorld
 
 from collections import OrderedDict
 import numpy as np
@@ -28,10 +28,10 @@ import sys
 import os
 
 class RllEnvWrapper(RllEnv):
-    def __init__(self, underlying, guide, use_val=False):
+    def __init__(self, underlying, use_val=False):
         self.underlying = underlying
         self.active_instance = None
-        self.max_hint_len = guide.max_len
+        self.max_hint_len = underlying.max_hint_len
         self.use_val = use_val
         super(RllEnvWrapper, self).__init__()
         self.reset()
@@ -174,10 +174,10 @@ class RllBaselineWrapper(RllBaseline):
         super(RllBaseline, self).__init__()
 
 class RlLabTrainer(object):
-    def __init__(self, config, world, model, guide, session):
+    def __init__(self, config, world, model, session):
         self.config = config
         self.session = session
-        env = TfEnv(RllEnvWrapper(world, guide))
+        env = TfEnv(RllEnvWrapper(world))
         policy = RllPolicyWrapper(model, env.spec, env._wrapped_env, session)
         baseline = LinearFeatureBaseline(env.spec)
         algo_ctor = globals()[self.config.trainer.algo]

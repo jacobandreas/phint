@@ -1,7 +1,6 @@
 #!/usr/bin/env python2
 
 from misc.util import Struct
-import guides
 import worlds
 import models
 from objectives import Reinforce, Ppo, Cloning
@@ -23,17 +22,16 @@ from trainers import RlLabTrainer
 def main():
     config = configure()
     world = worlds.load(config)
-    guide = guides.load(config, world)
 
     # training pieces
     graph = tf.Graph()
     session = tf.Session(graph=graph)
     with graph.as_default(), session.as_default():
-        model = models.load(config, world, guide)
-        #objective = Reinforce(config, model)
-        objective = Cloning(config, model)
-        #trainer = trainers.load(config, session)
-        trainer = RlLabTrainer(config, world, model, guide, session)
+        model = models.load(config, world)
+        objective = Reinforce(config, model)
+        #objective = Cloning(config, model)
+        trainer = trainers.load(config, session)
+        #trainer = RlLabTrainer(config, world, model, session)
 
     # evaluation pieces
     eval_graph = tf.Graph()
@@ -44,10 +42,10 @@ def main():
     config_copy.model.controller.param_ling = False
     config_copy.model.controller.param_task = True
     with eval_graph.as_default(), eval_session.as_default():
-        ad_model = models.load(config_copy, world, guide)
+        ad_model = models.load(config_copy, world)
         ad_objective = Reinforce(config_copy, ad_model)
-        #ad_evaluator = AdaptationEvaluator(config_copy, world, ad_model, ad_objective, guide, eval_session)
-        ad_evaluator = RllAdaptationEvaluator(config_copy, world, ad_model, guide, eval_session)
+        ad_evaluator = AdaptationEvaluator(config_copy, world, ad_model, ad_objective, eval_session)
+        #ad_evaluator = RllAdaptationEvaluator(config_copy, world, ad_model, eval_session)
     def _evaluate():
         #zs_evaluator = ZeroShotEvaluator(config_copy, session)
         #zs_evaluator.evaluate(world, model)

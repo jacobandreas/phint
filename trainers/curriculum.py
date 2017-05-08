@@ -85,7 +85,7 @@ class CurriculumTrainer(object):
         model.save(self.session)
         while True:
             inst = [world.sample_train(task_probs) for _ in range(n_batch)]
-            inits = [str(i.state.blocks) + " " + str(i.state.goal) for i in inst]
+            #inits = [str(i.state.blocks) + " " + str(i.state.goal) for i in inst]
             buf, total_reward, _ = _do_rollout(self.config, world, inst, model, n_batch, self.session, intrinsic=True)
             i_rollout += self.config.trainer.n_rollout_batch
             objective.experience(buf)
@@ -121,7 +121,7 @@ class CurriculumTrainer(object):
                                 util.pp_sexp(hint), score, counts[hint])
                 for i_ex, ex in enumerate(examples):
                     logging.info("[rollout %d] %s" % (i_ex, ex))
-                    logging.info("[goal %d] %s" % (i_ex, inits[i_ex]))
+                    #logging.info("[goal %d] %s" % (i_ex, inits[i_ex]))
                 if min(scores) > 0.8:
                     max_len += 1
                 model.save(self.session)
@@ -130,13 +130,13 @@ class CurriculumTrainer(object):
                         or i_iter > self.config.trainer.switch_iter):
                     task_probs = self._recompute_task_probs(world, counts, rewards, max_len)
 
-                if i_iter % (n_update * 100) == 0 and eval_thunk is not None:
-                    eval_thunk()
-                    model.load(self.config.name, self.session)
-
                 #logging.info("[probs] %s", task_probs)
                 logging.info("[mean] %f" % np.mean(scores))
                 logging.info("")
                 counts = defaultdict(lambda: 1.)
                 rewards = defaultdict(lambda: 0.)
                 err = 0
+
+                if i_iter % (n_update * 10) == 0 and eval_thunk is not None:
+                    eval_thunk()
+                    model.load(self.config.name, self.session)

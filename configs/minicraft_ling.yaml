@@ -1,10 +1,10 @@
-name: ant_ling
-load: ant_ling
+name: minicraft_ling
+load: minicraft_ling
 train: true
 eval: true
 
 world: 
-  name: GymWorld
+  name: MinicraftWorld
   train_fold: train
   test_fold: val
 
@@ -15,12 +15,12 @@ model:
   name: ReprModel
   intrinsic_bonus: 0
   actor:
-    n_hidden: [32, 32]
+    n_hidden: [64, 64]
     ret_bias: 0
 
   controller:
     n_hidden: 128
-    n_embed: 32
+    n_embed: 64
     param_ling: true
     param_task: false
     encode_ling: 0
@@ -31,13 +31,20 @@ model:
     by_task: true
 
 objective:
-  discount: 0.99
-  step_size: 0.01
+  discount: 0.9
+  #step_size: 0.01
+  step_size: 0.001
   entropy_bonus: 0.01
-  n_train_batch: 20000
+  n_train_batch: 10000
 
 trainer:
-  name: RlLabTrainer
-  algo: TRPO
-  max_rollout_len: 1000
+  #name: RlLabTrainer
+  #algo: VPG
+  name: CurriculumTrainer 
+  max_rollout_len: 100
   n_iters: 10000
+  n_rollout_batch: 100
+  n_update: 100
+  resample_every: 1
+  switch_iter: 0
+  log_each_task: false
