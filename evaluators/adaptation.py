@@ -26,6 +26,7 @@ class AdaptationEvaluator(object):
         n_batch = self.config.trainer.n_rollout_batch
         for i_task in range(self.world.n_test):
             self.session.run(tf.global_variables_initializer())
+            self.session.run([model.o_reset_temp])
             self.model.load(self.config.load, self.session)
             probs = np.zeros(self.world.n_test)
             probs[i_task] = 1
@@ -51,6 +52,7 @@ class AdaptationEvaluator(object):
                 logging.info("[ad failure] %d %f %f", i_task, np.mean(rew), np.mean(comp))
 
         logging.info("")
+        self.model.load(self.config.load, self.session)
 
 #class RllAdaptationEvaluator(object):
 #    def __init__(self, config, world, model, session):

@@ -99,8 +99,10 @@ class ReprModel(object):
 
             self.t_action_param = self.actor.t_action_param
             self.t_action_temp = tf.get_variable(
-                    "temp", shape=(world.n_act,),
-                    initializer=tf.constant_initializer(0))
+                    #"temp", shape=(world.n_act,),
+                    "temp", shape=(),
+                    initializer=tf.constant_initializer(-3))
+            self.o_reset_temp = tf.assign(self.t_action_temp, -3)
             self.t_action_bias = 0
 
             self.params = util.vars_in_scope(scope)
