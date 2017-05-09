@@ -101,12 +101,12 @@ class ReprModel(object):
             self.t_action_temp = tf.get_variable(
                     #"temp", shape=(world.n_act,),
                     "temp", shape=(),
-                    initializer=tf.constant_initializer(-3))
-            self.o_reset_temp = tf.assign(self.t_action_temp, -3)
+                    initializer=tf.constant_initializer(-1))
+            self.o_reset_temp = tf.assign(self.t_action_temp, -1)
             self.t_action_bias = 0
 
             self.params = util.vars_in_scope(scope)
-            self.repr_params = self.controller.repr_params
+            self.repr_params = self.controller.repr_params + [self.t_action_temp]
 
         self.t_baseline = self.critic.t_value
 
