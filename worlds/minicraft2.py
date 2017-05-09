@@ -4,8 +4,8 @@ from collections import namedtuple
 import numpy as np
 from skimage.measure import block_reduce
 
-SIZE = 10
-WINDOW_SIZE = 3
+SIZE = 11
+WINDOW_SIZE = 5
 
 INGREDIENTS = ["wood", "ore", "grass", "stone"]
 

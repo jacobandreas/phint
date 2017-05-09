@@ -31,7 +31,7 @@ class AdaptationEvaluator(object):
             probs[i_task] = 1
             updates = 0
             success = False
-            while updates < 100:
+            while updates < 200:
                 inst = [self.world.sample_test(probs) for _ in range(n_batch)]
                 buf, rew, comp = _do_rollout(
                         self.config, self.world, inst, self.model, n_batch, self.session)
