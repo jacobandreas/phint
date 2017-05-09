@@ -43,7 +43,7 @@ HINTS = [
 ]
 
 TEST_IDS = list(range(len(HINTS))[::3])
-TRAIN_IDS = [i for i in range(len(HINTS)) if h not in TEST_IDS]
+TRAIN_IDS = [i for i in range(len(HINTS)) if i not in TEST_IDS]
 
 N_ACTIONS = 6
 UP, DOWN, LEFT, RIGHT, USE, CRAFT = range(N_ACTIONS)
