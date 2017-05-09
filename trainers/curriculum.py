@@ -23,11 +23,11 @@ def _do_rollout(config, world, task, model, n_batch, session, intrinsic=False):
         rew = np.asarray(world_rew) 
         if intrinsic:
             rew += config.model.intrinsic_bonus * np.asarray(intrinsic_rew)
-        complete_rew = world.complete(task)
+        #complete_rew = world.complete(task)
         for i in range(n_batch):
             if not stop[i]:
                 rew_here = rew[i]
-                total_complete[i] += complete_rew[i]
+                #total_complete[i] += complete_rew[i]
                 #if agent_stop[i]:
                 #    rew_here += complete_rew[i]
                 total_reward[i] += rew_here

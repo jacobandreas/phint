@@ -4,7 +4,7 @@ train: true
 eval: true
 
 world: 
-  name: MinicraftWorld
+  name: Minicraft2World
   train_fold: train
   test_fold: val
 
@@ -15,7 +15,7 @@ model:
   name: ReprModel
   intrinsic_bonus: 0
   actor:
-    n_hidden: [128]
+    n_hidden: [64, 64]
     ret_bias: 0
 
   controller:
@@ -44,7 +44,7 @@ trainer:
   max_rollout_len: 100
   n_iters: 10000
   n_rollout_batch: 100
-  n_update: 100
+  n_update: 50
   resample_every: 1
   switch_iter: 0
   log_each_task: false

@@ -4,6 +4,7 @@ import sys
 #except Exception as e:
 #    print >>sys.stderr, "Warning: unable to load Malmo"
 from minicraft import MinicraftWorld
+from minicraft2 import Minicraft2World
 from shurdlurn import ShurdlurnWorld
 #from gym import GymWorld
 
