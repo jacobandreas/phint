@@ -106,7 +106,7 @@ class Minicraft2World(object):
         self.n_act = N_ACTIONS
         self.is_discrete = True
 
-        self.max_hint_len = 2
+        self.max_hint_len = 3
         self.n_vocab = len(self.vocab)
         self.random = util.next_random()
 
