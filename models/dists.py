@@ -11,7 +11,7 @@ class DiscreteDist(object):
 
     def sample(self, param, bias, temp):
         #prob = np.exp(param * temp[:, np.newaxis] + bias)
-        prob = np.exp(param * temp)
+        prob = np.exp(np.exp(param) * temp)
         #prob = np.exp(param)
         prob /= prob.sum(axis=1, keepdims=True)
         #print prob[0, :]
@@ -24,7 +24,7 @@ class DiscreteDist(object):
 
     def log_prob_of(self, t_param, t_bias, t_temp, t_action, t_ret):
         ##t_score = t_param * tf.expand_dims(t_temp, axis=1) + t_bias
-        t_score = t_param * t_temp
+        t_score = tf.exp(t_param) * t_temp
         #t_score = t_param
         #t_log_prob = tf.nn.log_softmax(t_score)
         #t_chosen = util.batch_gather(t_log_prob, t_action)
