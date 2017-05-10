@@ -19,12 +19,9 @@ model:
     ret_bias: 0
 
   controller:
-    n_hidden: 128
     n_embed: 64
     param_ling: false
     param_task: true
-    encode_ling: 0
-    decode_ling: 0
 
   critic:
     type: linear
