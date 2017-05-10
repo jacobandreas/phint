@@ -26,8 +26,8 @@ class AdaptationEvaluator(object):
         n_batch = self.config.trainer.n_rollout_batch
         for i_task in range(self.world.n_test):
             self.session.run(tf.global_variables_initializer())
-            self.session.run([self.model.o_reset_temp])
             self.model.load(self.config.load, self.session)
+            self.session.run([self.model.o_reset_temp])
             probs = np.zeros(self.world.n_test)
             probs[i_task] = 1
             updates = 0
