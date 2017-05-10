@@ -19,12 +19,11 @@ model:
     ret_bias: 0
 
   controller:
-    n_hidden: 128
-    n_embed: 64
+    n_embed: 50
+    embeddings: "data/embeddings.txt"
+    train_embeddings: false
     param_ling: true
     param_task: false
-    encode_ling: 0
-    decode_ling: 0
 
   critic:
     type: linear

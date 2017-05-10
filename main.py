@@ -34,6 +34,8 @@ def main():
         #trainer = RlLabTrainer(config, world, model, session)
 
     # evaluation pieces
+    zs_evaluator = ZeroShotEvaluator(config, world, model, session)
+
     eval_graph = tf.Graph()
     eval_session = tf.Session(graph=eval_graph)
     config_name = sys.argv[1]
@@ -47,8 +49,7 @@ def main():
         ad_evaluator = AdaptationEvaluator(config_copy, world, ad_model, ad_objective, eval_session)
         #ad_evaluator = RllAdaptationEvaluator(config_copy, world, ad_model, eval_session)
     def _evaluate():
-        #zs_evaluator = ZeroShotEvaluator(config_copy, session)
-        #zs_evaluator.evaluate(world, model)
+        zs_evaluator.evaluate()
         with eval_graph.as_default(), eval_session.as_default():
             ad_evaluator.evaluate()
 

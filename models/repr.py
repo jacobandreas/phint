@@ -1,6 +1,7 @@
 from misc import util
-from net import _linear, _embed, _mlp
+from net import _linear, _embed, _embed_pretrained, _mlp
 from dists import DiscreteDist, DiagonalGaussianDist
+import embeddings
 
 from collections import namedtuple
 import logging
@@ -12,17 +13,26 @@ ModelState = namedtuple("ModelState", ["task_id", "hint"])
 
 class EmbeddingController(object):
     def __init__(self, config, t_obs, t_task, t_hint, world):
+        param_ling = config.model.controller.param_ling
+        param_task = config.model.controller.param_task
+
         with tf.variable_scope("ling_repr"):
-            t_embed = _embed(t_hint, world.n_vocab, config.model.controller.n_hidden)
+            if hasattr(config.model.controller, "embeddings"):
+                embedding_dict = embeddings.load(
+                        config.model.controller.embeddings, world.vocab)
+                assert embedding_dict.shape[1] == config.model.controller.n_embed
+                t_embed = _embed_pretrained(
+                        t_hint, embedding_dict,
+                        config.model.controller.train_embeddings)
+            else:
+                t_embed = _embed(t_hint, world.n_vocab, config.model.controller.n_embed)
             t_ling_repr = tf.reduce_mean(t_embed, axis=1)
 
         with tf.variable_scope("task_repr") as repr_scope:
             t_task_repr = _embed(
-                    t_task, world.n_tasks, config.model.controller.n_hidden)
+                    t_task, world.n_tasks, config.model.controller.n_embed)
             self.repr_params = util.vars_in_scope(repr_scope)
 
-        param_ling = config.model.controller.param_ling
-        param_task = config.model.controller.param_task
         if param_ling and param_task:
             self.t_repr = t_ling_repr + t_task_repr
         elif param_ling:
@@ -111,12 +121,12 @@ class ReprModel(object):
         self.t_baseline = self.critic.t_value
 
         self.t_loss_extra = 0
-        enc_ling = self.config.model.controller.encode_ling
-        dec_ling = self.config.model.controller.decode_ling
-        if enc_ling > 0:
+        if hasattr(self.config.model.controller, "encode_ling"):
+            enc_ling = self.config.model.controller.encode_ling
             self.t_loss_extra += tf.reduce_mean(enc_ling * 
                 tf.nn.l2_loss(self.controller.t_repr - self.controller.t_ling_repr))
-        if dec_ling > 0:
+        if hasattr(self.config.model.controller, "decode_ling"):
+            dec_ling = self.config.model.controller.decode_ling
             self.t_loss_extra += tf.reduce_mean(dec_ling * self.controller.t_dec_loss)
 
     def prepare_sym(self, obs_var, task_id_var, hint_var):
