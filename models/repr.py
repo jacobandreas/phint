@@ -43,6 +43,8 @@ class EmbeddingController(object):
             self.t_repr = tf.zeros_like(t_task_repr)
         self.t_ling_repr = t_ling_repr
 
+        self.t_repr = self.t_repr + tf.random_normal(shape=tf.shape(self.t_repr), stddev=0.5)
+
         self.t_dec_loss = 0
         # TODO(jda) including this causes segfaults on the server
         #with tf.variable_scope("ling_decoder"):
