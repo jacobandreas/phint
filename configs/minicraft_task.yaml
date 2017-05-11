@@ -15,11 +15,11 @@ model:
   name: ReprModel
   intrinsic_bonus: 0
   actor:
-    n_hidden: [64, 64]
+    n_hidden: [128, 128]
     ret_bias: 0
 
   controller:
-    n_embed: 64
+    n_embed: 50
     param_ling: false
     param_task: true
 
