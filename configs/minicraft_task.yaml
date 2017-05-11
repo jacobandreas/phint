@@ -21,6 +21,7 @@ model:
 
   controller:
     n_embed: 50
+    train_embeddings: true
     param_ling: false
     param_task: true
 
