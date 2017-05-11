@@ -21,11 +21,11 @@ class EmbeddingController(object):
                 embedding_dict = embeddings.load(
                         config.model.controller.embeddings, world.vocab)
                 assert embedding_dict.shape[1] == config.model.controller.n_embed
-                t_embed = _embed_pretrained(
-                        t_hint, embedding_dict,
-                        config.model.controller.train_embeddings)
+                t_embed = _embed_pretrained(t_hint, embedding_dict)
             else:
                 t_embed = _embed(t_hint, world.n_vocab, config.model.controller.n_embed)
+            if not config.model.controller.train_embeddings:
+                t_embed = tf.stop_gradient(t_embed)
             t_ling_repr = tf.reduce_mean(t_embed, axis=1)
 
         with tf.variable_scope("task_repr") as repr_scope:
@@ -43,7 +43,7 @@ class EmbeddingController(object):
             self.t_repr = tf.zeros_like(t_task_repr)
         self.t_ling_repr = t_ling_repr
 
-        self.t_repr = self.t_repr + tf.random_normal(shape=tf.shape(self.t_repr), stddev=0.5)
+        self.t_repr = self.t_repr # + tf.random_normal(shape=tf.shape(self.t_repr), stddev=0.5)
 
         self.t_dec_loss = 0
         # TODO(jda) including this causes segfaults on the server

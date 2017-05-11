@@ -7,20 +7,18 @@ world:
   name: Minicraft2World
   train_fold: train
   test_fold: val
-
-guide:
-  name: SketchGuide
+  fragment_vocab: 4
 
 model: 
   name: ReprModel
   intrinsic_bonus: 0
   actor:
-    n_hidden: [128, 128]
+    n_hidden: [64, 64]
     ret_bias: 0
 
   controller:
     n_embed: 50
-    embeddings: "data/embeddings.txt"
+    #embeddings: "data/embeddings.txt"
     train_embeddings: false
     param_ling: true
     param_task: false

@@ -98,10 +98,16 @@ class Minicraft2World(object):
             self.index.index(k): set(self.index.index(vv) for vv in v)
             for k, v in RECIPES.items()
         }
-        self.hints = [
-            (self.index.index(k), tuple(self.vocab.index(vv) for vv in v))
-            for k, v in HINTS
-        ]
+        #self.hints = [
+        #    (self.index.index(k), tuple(self.vocab.index(vv) for vv in v))
+        #    for k, v in HINTS
+        #]
+        self.hints = []
+        for k, v in HINTS:
+            self.hints.append((self.index.index(k), v))
+            for w in v:
+                for i in range(config.world.fragment_vocab):
+                    self.vocab.index("%s_%d" % (w, i))
 
         self.kind_to_obs = {}
         for k in self.ingredients:
@@ -120,7 +126,7 @@ class Minicraft2World(object):
 
         self.tasks = []
         for i, (goal, steps) in enumerate(self.hints):
-            self.tasks.append(Minicraft2Task(i, goal, steps))
+            self.tasks.append(Minicraft2Task(i, goal, None))
         self.n_tasks = len(self.tasks)
         self.n_train = len(TRAIN_IDS)
         self.n_val = 0
@@ -128,6 +134,12 @@ class Minicraft2World(object):
 
     def sample_instance(self, task_id):
         task = self.tasks[task_id]
+        _, steps = self.hints[task_id]
+        n_frag = self.config.world.fragment_vocab
+        indexed_steps = [
+                self.vocab["%s_%d" % (w, self.random.randint(n_frag))]
+                for w in steps]
+        task = task._replace(hint=tuple(indexed_steps))
         state = self.sample_state(task)
         return Minicraft2Instance(task, state)
 

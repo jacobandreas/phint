@@ -22,13 +22,11 @@ def _embed(t_in, n_embeddings, n_out):
     t_embed = tf.nn.embedding_lookup(v, t_in)
     return t_embed
 
-def _embed_pretrained(t_in, emb_dict, train=False):
+def _embed_pretrained(t_in, emb_dict):
     v = tf.get_variable(
             "embed", shape=emb_dict.shape,
             initializer=tf.constant_initializer(emb_dict))
     t_embed = tf.nn.embedding_lookup(v, t_in)
-    if not train:
-        t_embed = tf.stop_gradient(t_embed)
     return t_embed
 
 def _mlp(t_in, widths, activations):
