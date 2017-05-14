@@ -2,53 +2,110 @@ from misc import array, util
 
 from collections import namedtuple
 import numpy as np
+import re
 from skimage.measure import block_reduce
 
 SIZE = 11
 WINDOW_SIZE = 5
 
-INGREDIENTS = ["wood", "ore", "grass", "stone"]
+WOOD_VARIANTS = ["oak", "pine", "birch"]
+ORE_VARIANTS = ["copper", "iron", "nickel"]
+STONE_VARIANTS = ["granite", "quartz", "slate"]
 
-CRAFTS = [
-    "stick", "metal", "rope", "shovel", "ladder", "axe", "trap", "sword",
-    "bridge"
-]
-
-RECIPES = {
-    "stick": {"wood"},
-    "metal": {"ore"},
-    "rope": {"grass"},
-    "shovel": {"stick", "metal"},
-    "ladder": {"stick", "rope"},
-    "axe": {"stick", "stone"},
-    "trap": {"metal", "rope"},
-    "sword": {"metal", "stone"},
-    "bridge": {"rope", "stone"}
+INGREDIENTS = {
+    "wood_?": ["wood_%s" % v for v in WOOD_VARIANTS],
+    "ore_?": ["ore_%s" % v for v in ORE_VARIANTS],
+    "grass": ["grass"],
+    "stone_?": ["stone_%s" % v for v in STONE_VARIANTS]
 }
 
-HINTS = [
-    ("wood", ["wood"]),
-    ("ore", ["ore"]),
-    ("grass", ["grass"]),
-    ("stone", ["stone"]),
-    ("stick", ["wood", "craft"]),
-    ("metal", ["ore", "craft"]),
-    ("rope", ["grass", "craft"]),
-    ("shovel", ["wood", "metal", "craft"]),
-    ("ladder", ["wood", "grass", "craft"]),
-    ("axe", ["wood", "stone", "craft"]),
-    ("trap", ["ore", "grass", "craft"]),
-    ("sword", ["ore", "stone", "craft"]),
-    ("bridge", ["grass", "stone", "craft"]),
-    #("shovel", ["stick", "metal", "craft"]),
-    #("ladder", ["stick", "rope", "craft"]),
-    #("axe", ["stick", "stone", "craft"]),
-    #("trap", ["metal", "rope", "craft"]),
-    #("sword", ["metal", "stone", "craft"]),
-    #("bridge", ["rope", "stone", "craft"]),
-]
+CRAFTS = {
+    "stick_?": ["stick_%s" % v for v in WOOD_VARIANTS],
+    "metal_?": ["metal_%s" % v for v in ORE_VARIANTS],
+    "rope": ["rope"],
+    "shovel_?_?": ["shovel_%s_%s" % (v1, v2) for v1 in WOOD_VARIANTS for v2 in ORE_VARIANTS],
+    "ladder_?": ["ladder_%s" % v for v in WOOD_VARIANTS],
+    "axe_?_?": ["axe_%s_%s" % (v1, v2) for v1 in WOOD_VARIANTS for v2 in STONE_VARIANTS],
+    "trap_?": ["trap_%s" % v for v in ORE_VARIANTS],
+    "sword_?_?": ["sword_%s_%s" % (v1, v2) for v1 in ORE_VARIANTS for v2 in STONE_VARIANTS],
+    "bridge_?": ["bridge_%s" % v for v in ORE_VARIANTS]
+}
 
-TEST_IDS = list(range(len(HINTS))[::3])
+TEMPLATES = {
+    "stick_?": ["wood_?"],
+    "metal_?": ["ore_?"],
+    "rope": ["grass"],
+    "shovel_?_?": ["stick_?", "metal_?"],
+    "ladder_?": ["stick_?", "rope"],
+    "axe_?_?": ["stick_?", "stone_?"],
+    "trap_?": ["metal_?", "rope"],
+    "sword_?_?": ["metal_?", "stone_?"],
+    "bridge_?": ["rope", "stone_?"]
+}
+
+RECIPES = {}
+HINTS = []
+for group in CRAFTS.values():
+    for goal in group:
+        variants = goal.split("_")[1:]
+        abstracted = re.sub(r"_[a-z]+", "_?", goal)
+        ingredients = TEMPLATES[abstracted]
+
+        spec_parents = []
+        var_parents = list(variants)
+        for ingredient in ingredients:
+            if "?" in ingredient:
+                spec_parents.append(ingredient.replace("?", var_parents.pop(0)))
+            else:
+                spec_parents.append(ingredient)
+        RECIPES[goal] = spec_parents
+
+        base = False
+        while not base:
+            base = True
+            new_ingredients = []
+            for ing in ingredients:
+                if ing in TEMPLATES:
+                    new_ingredients += TEMPLATES[ing]
+                    base = False
+                else:
+                    new_ingredients.append(ing)
+            ingredients = new_ingredients
+        specialized = []
+        for ingredient in ingredients:
+            if "?" in ingredient:
+                specialized.append(ingredient.replace("?", variants.pop(0)))
+            else:
+                specialized.append(ingredient)
+        #print goal, specialized
+        HINTS.append((goal, specialized))
+
+for k, v in RECIPES.items():
+    print k, v
+
+#HINTS = [
+#    ("wood", ["wood"]),
+#    ("ore", ["ore"]),
+#    ("grass", ["grass"]),
+#    ("stone", ["stone"]),
+#    ("stick", ["wood", "craft"]),
+#    ("metal", ["ore", "craft"]),
+#    ("rope", ["grass", "craft"]),
+#    ("shovel", ["wood", "metal", "craft"]),
+#    ("ladder", ["wood", "grass", "craft"]),
+#    ("axe", ["wood", "stone", "craft"]),
+#    ("trap", ["ore", "grass", "craft"]),
+#    ("sword", ["ore", "stone", "craft"]),
+#    ("bridge", ["grass", "stone", "craft"]),
+#    #("shovel", ["stick", "metal", "craft"]),
+#    #("ladder", ["stick", "rope", "craft"]),
+#    #("axe", ["stick", "stone", "craft"]),
+#    #("trap", ["metal", "rope", "craft"]),
+#    #("sword", ["metal", "stone", "craft"]),
+#    #("bridge", ["rope", "stone", "craft"]),
+#]
+
+TEST_IDS = list(range(len(HINTS))[::4])
 TRAIN_IDS = [i for i in range(len(HINTS)) if i not in TEST_IDS]
 #TEST_IDS = []
 #TRAIN_IDS = [10]
@@ -85,14 +142,13 @@ class Minicraft2Instance(object):
         self.task = task
         self.state = init_state
 
-
 class Minicraft2World(object):
     def __init__(self, config):
         self.config = config
         self.tasks = []
         self.index = util.Index()
         self.vocab = util.Index()
-        self.ingredients = [self.index.index(k) for k in INGREDIENTS]
+        self.ingredients = [self.index.index(k) for k in RECIPES.keys()]
         self.crafts = [self.index.index(k) for k in CRAFTS]
         self.recipes = {
             self.index.index(k): set(self.index.index(vv) for vv in v)
@@ -106,8 +162,7 @@ class Minicraft2World(object):
         for k, v in HINTS:
             self.hints.append((self.index.index(k), v))
             for w in v:
-                for i in range(config.world.fragment_vocab):
-                    self.vocab.index("%s_%d" % (w, i))
+                self.vocab.index(w)
 
         self.kind_to_obs = {}
         for k in self.ingredients:
@@ -135,10 +190,7 @@ class Minicraft2World(object):
     def sample_instance(self, task_id):
         task = self.tasks[task_id]
         _, steps = self.hints[task_id]
-        n_frag = self.config.world.fragment_vocab
-        indexed_steps = [
-                self.vocab["%s_%d" % (w, self.random.randint(n_frag))]
-                for w in steps]
+        indexed_steps = [self.vocab[w] for w in steps]
         task = task._replace(hint=tuple(indexed_steps))
         state = self.sample_state(task)
         return Minicraft2Instance(task, state)

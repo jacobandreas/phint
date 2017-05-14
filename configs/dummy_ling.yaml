@@ -1,10 +1,10 @@
-name: minicraft_ling
-load: minicraft_ling
+name: dummy_ling
+load: dummy_ling
 train: true
 eval: true
 
 world: 
-  name: Minicraft2World
+  name: DummyWorld
   train_fold: train
   test_fold: val
 
@@ -17,7 +17,6 @@ model:
 
   controller:
     n_embed: 50
-    #embeddings: "data/embeddings.txt"
     train_embeddings: false
     param_ling: true
     param_task: false
@@ -28,7 +27,6 @@ model:
 
 objective:
   discount: 0.9
-  #step_size: 0.01
   step_size: 0.001
   entropy_bonus: 0.001
   n_train_batch: 10000
@@ -40,7 +38,7 @@ trainer:
   max_rollout_len: 100
   n_iters: 10000
   n_rollout_batch: 100
-  n_update: 50
+  n_update: 5
   resample_every: 1
   switch_iter: 0
   log_each_task: false

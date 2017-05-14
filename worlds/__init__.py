@@ -6,6 +6,7 @@ import sys
 from minicraft import MinicraftWorld
 from minicraft2 import Minicraft2World
 from shurdlurn import ShurdlurnWorld
+from dummy import DummyWorld
 #from gym import GymWorld
 
 def load(config):

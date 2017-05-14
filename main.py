@@ -50,8 +50,8 @@ def main():
         #ad_evaluator = RllAdaptationEvaluator(config_copy, world, ad_model, eval_session)
     def _evaluate():
         zs_evaluator.evaluate()
-        with eval_graph.as_default(), eval_session.as_default():
-            ad_evaluator.evaluate()
+        #with eval_graph.as_default(), eval_session.as_default():
+        #    ad_evaluator.evaluate()
 
 
     # rllab might have screwed with this
