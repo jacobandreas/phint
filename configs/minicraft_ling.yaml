@@ -12,7 +12,7 @@ model:
   name: ReprModel
   intrinsic_bonus: 0
   actor:
-    n_hidden: [64, 64]
+    n_hidden: [256, 256]
     ret_bias: 0
 
   controller:
@@ -30,7 +30,7 @@ objective:
   discount: 0.9
   #step_size: 0.01
   step_size: 0.001
-  entropy_bonus: 0.01
+  entropy_bonus: 0.001
   n_train_batch: 10000
 
 trainer:
