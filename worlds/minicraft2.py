@@ -8,9 +8,12 @@ from skimage.measure import block_reduce
 SIZE = 11
 WINDOW_SIZE = 5
 
-WOOD_VARIANTS = ["oak", "pine", "birch"]
-ORE_VARIANTS = ["copper", "iron", "nickel"]
-STONE_VARIANTS = ["granite", "quartz", "slate"]
+#WOOD_VARIANTS = ["oak", "pine", "birch"]
+#ORE_VARIANTS = ["copper", "iron", "nickel"]
+#STONE_VARIANTS = ["granite", "quartz", "slate"]
+WOOD_VARIANTS = ["oak"]
+ORE_VARIANTS = ["copper"]
+STONE_VARIANTS = ["iron"]
 
 INGREDIENTS = (
     ["wood_%s" % v for v in WOOD_VARIANTS]
@@ -80,8 +83,16 @@ for group in CRAFTS.values():
         #print goal, specialized
         HINTS.append((goal, specialized))
 
-for k, v in RECIPES.items():
-    print k, v
+for x in RECIPES.items():
+    print x
+
+print
+
+for x in HINTS:
+    print x
+
+#for i, (k, v) in enumerate(HINTS):
+#    print i, k, v
 
 #HINTS = [
 #    ("wood", ["wood"]),
@@ -106,10 +117,16 @@ for k, v in RECIPES.items():
 #]
 
 #TEST_IDS = list(range(len(HINTS))[::4])
-TEST_IDS = list(range(len(HINTS))[::2])
-TRAIN_IDS = [i for i in range(len(HINTS)) if i not in TEST_IDS]
-#TEST_IDS = []
-#TRAIN_IDS = [10]
+#TEST_IDS = list(range(len(HINTS))[::2])
+#TRAIN_IDS = [i for i in range(len(HINTS)) if i not in TEST_IDS]
+
+TEST_IDS = [len(HINTS)-1]
+TRAIN_IDS = [len(HINTS)-1]
+#TRAIN_IDS = [1]
+#TEST_IDS = [1]
+
+#TRAIN_IDS = [30]
+#print HINTS[30]
 
 N_ACTIONS = 6
 UP, DOWN, LEFT, RIGHT, USE, CRAFT = range(N_ACTIONS)
@@ -150,11 +167,11 @@ class Minicraft2World(object):
         self.index = util.Index()
         self.vocab = util.Index()
         self.ingredients = [self.index.index(k) for k in INGREDIENTS]
-        self.crafts = [self.index.index(k) for k in CRAFTS]
         self.recipes = {
             self.index.index(k): set(self.index.index(vv) for vv in v)
             for k, v in RECIPES.items()
         }
+        print self.recipes
         #self.hints = [
         #    (self.index.index(k), tuple(self.vocab.index(vv) for vv in v))
         #    for k, v in HINTS
@@ -166,8 +183,10 @@ class Minicraft2World(object):
                 self.vocab.index(w)
 
         self.kind_to_obs = {}
+        self.obs_to_kind = {}
         for k in self.ingredients:
             self.kind_to_obs[k] = len(self.kind_to_obs)
+            self.obs_to_kind[self.kind_to_obs[k]] = k
 
         self.n_obs = (
             2 * WINDOW_SIZE * WINDOW_SIZE * len(self.kind_to_obs)
@@ -294,11 +313,11 @@ class Minicraft2State(object):
                 if here.sum() > 1:
                     assert False
                 assert here.sum() == 1
-                thing = here.argmax()
+                obs = here.argmax()
                 new_inventory = self.inventory.copy()
                 new_grid = self.grid.copy()
-                new_inventory[thing] += 1
-                new_grid[nx, ny, thing] = 0
+                new_inventory[self.world.obs_to_kind[obs]] += 1
+                new_grid[nx, ny, obs] = 0
         elif action == CRAFT:
             for product, ingredients in self.world.recipes.items():
                 if all(self.inventory[ing] > 0 for ing in ingredients):

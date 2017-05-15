@@ -55,8 +55,8 @@ def main():
 
 
     # rllab might have screwed with this
-    setup_logging(config)
     logging.getLogger().setLevel(logging.DEBUG)
+    setup_logging(config)
 
     if config.train:
         with graph.as_default(), session.as_default():
