@@ -105,7 +105,8 @@ for k, v in RECIPES.items():
 #    #("bridge", ["rope", "stone", "craft"]),
 #]
 
-TEST_IDS = list(range(len(HINTS))[::4])
+#TEST_IDS = list(range(len(HINTS))[::4])
+TEST_IDS = list(range(len(HINTS))[::2])
 TRAIN_IDS = [i for i in range(len(HINTS)) if i not in TEST_IDS]
 #TEST_IDS = []
 #TRAIN_IDS = [10]
