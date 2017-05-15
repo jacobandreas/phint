@@ -12,12 +12,12 @@ WOOD_VARIANTS = ["oak", "pine", "birch"]
 ORE_VARIANTS = ["copper", "iron", "nickel"]
 STONE_VARIANTS = ["granite", "quartz", "slate"]
 
-INGREDIENTS = {
-    "wood_?": ["wood_%s" % v for v in WOOD_VARIANTS],
-    "ore_?": ["ore_%s" % v for v in ORE_VARIANTS],
-    "grass": ["grass"],
-    "stone_?": ["stone_%s" % v for v in STONE_VARIANTS]
-}
+INGREDIENTS = (
+    ["wood_%s" % v for v in WOOD_VARIANTS]
+    + ["ore_%s" % v for v in ORE_VARIANTS]
+    + ["grass"]
+    + ["stone_%s" % v for v in STONE_VARIANTS]
+)
 
 CRAFTS = {
     "stick_?": ["stick_%s" % v for v in WOOD_VARIANTS],
@@ -148,7 +148,7 @@ class Minicraft2World(object):
         self.tasks = []
         self.index = util.Index()
         self.vocab = util.Index()
-        self.ingredients = [self.index.index(k) for k in RECIPES.keys()]
+        self.ingredients = [self.index.index(k) for k in INGREDIENTS]
         self.crafts = [self.index.index(k) for k in CRAFTS]
         self.recipes = {
             self.index.index(k): set(self.index.index(vv) for vv in v)
