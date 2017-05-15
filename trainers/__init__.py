@@ -1,6 +1,6 @@
 from curriculum import CurriculumTrainer
 from imitation import ImitationTrainer
-#from rllab_wrapper import RlLabTrainer
+from rllab_wrapper import RlLabTrainer
 
 def load(config, session):
     cls_name = config.trainer.name

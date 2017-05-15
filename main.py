@@ -17,7 +17,7 @@ import tensorflow as tf
 import traceback
 import yaml
 
-#from trainers import RlLabTrainer
+from trainers import RlLabTrainer
 
 def main():
     config = configure()
@@ -30,8 +30,8 @@ def main():
         model = models.load(config, world)
         objective = Reinforce(config, model)
         #objective = Cloning(config, model)
-        trainer = trainers.load(config, session)
-        #trainer = RlLabTrainer(config, world, model, session)
+        #trainer = trainers.load(config, session)
+        trainer = RlLabTrainer(config, world, model, session)
 
     # evaluation pieces
     zs_evaluator = ZeroShotEvaluator(config, world, model, session)

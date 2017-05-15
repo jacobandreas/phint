@@ -18,9 +18,9 @@ model:
   controller:
     n_embed: 50
     #embeddings: "data/embeddings.txt"
-    train_embeddings: false
-    param_ling: true
-    param_task: false
+    train_embeddings: true
+    param_ling: false
+    param_task: true
 
   critic:
     type: linear
@@ -44,3 +44,15 @@ trainer:
   resample_every: 1
   switch_iter: 0
   log_each_task: false
+#
+#objective:
+#  discount: 0.99
+#  step_size: 0.01
+#  entropy_bonus: 0.01
+#  n_train_batch: 20000
+#
+#trainer:
+#  name: RlLabTrainer
+#  algo: TRPO
+#  max_rollout_len: 1000
+#  n_iters: 10000
