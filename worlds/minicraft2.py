@@ -11,9 +11,9 @@ WINDOW_SIZE = 5
 #WOOD_VARIANTS = ["oak", "pine", "birch"]
 #ORE_VARIANTS = ["copper", "iron", "nickel"]
 #STONE_VARIANTS = ["granite", "quartz", "slate"]
-WOOD_VARIANTS = ["oak", "pine"]
-ORE_VARIANTS = ["copper", "iron"]
-STONE_VARIANTS = ["granite", "quartz"]
+WOOD_VARIANTS = ["oak"]
+ORE_VARIANTS = ["copper"]
+STONE_VARIANTS = ["granite"]
 
 INGREDIENTS = (
     ["wood_%s" % v for v in WOOD_VARIANTS]
@@ -116,17 +116,12 @@ for x in HINTS:
 #    #("bridge", ["rope", "stone", "craft"]),
 #]
 
-#TEST_IDS = list(range(len(HINTS))[::4])
+TEST_IDS = list(range(len(HINTS))[::4])
 #TEST_IDS = list(range(len(HINTS))[::2])
-#TRAIN_IDS = [i for i in range(len(HINTS)) if i not in TEST_IDS]
+TRAIN_IDS = [i for i in range(len(HINTS)) if i not in TEST_IDS]
 
-TEST_IDS = [len(HINTS)-1]
-TRAIN_IDS = [len(HINTS)-1]
-#TRAIN_IDS = [1]
-#TEST_IDS = [1]
-
-#TRAIN_IDS = [30]
-#print HINTS[30]
+#TEST_IDS = [len(HINTS)-1]
+#TRAIN_IDS = [len(HINTS)-1]
 
 N_ACTIONS = 6
 UP, DOWN, LEFT, RIGHT, USE, CRAFT = range(N_ACTIONS)
