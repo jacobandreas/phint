@@ -12,15 +12,15 @@ model:
   name: ReprModel
   intrinsic_bonus: 0
   actor:
-    n_hidden: [256, 256]
+    n_hidden: [64, 64]
     ret_bias: 0
 
   controller:
-    n_embed: 50
+    n_embed: 64
     #embeddings: "data/embeddings.txt"
     train_embeddings: true
-    param_ling: false
-    param_task: true
+    param_ling: true
+    param_task: false
 
   critic:
     type: linear
@@ -31,7 +31,7 @@ objective:
   #step_size: 0.01
   step_size: 0.001
   entropy_bonus: 0.001
-  n_train_batch: 10000
+  n_train_batch: 20000
 
 trainer:
   #name: RlLabTrainer
@@ -44,7 +44,7 @@ trainer:
   resample_every: 1
   switch_iter: 0
   log_each_task: false
-#
+
 #objective:
 #  discount: 0.99
 #  step_size: 0.01
@@ -54,5 +54,5 @@ trainer:
 #trainer:
 #  name: RlLabTrainer
 #  algo: TRPO
-#  max_rollout_len: 1000
+#  max_rollout_len: 100
 #  n_iters: 10000
