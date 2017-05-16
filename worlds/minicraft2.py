@@ -87,6 +87,10 @@ for group in CRAFTS.values():
                 specialized.append(ingredient)
         #print goal, specialized
         HINTS.append((goal, specialized))
+
+for ingredient in INGREDIENTS:
+    HINTS.append((ingredient, [ingredient]))
+
 np.random.shuffle(HINTS)
 
 for x in RECIPES.items():
@@ -229,14 +233,14 @@ class Minicraft2World(object):
         return Minicraft2State(self, grid, init_pos, init_dir, np.zeros(len(self.index)), task)
 
     def sample_train(self, p=None):
-        return self.sample_instance(self.random.choice(TRAIN_IDS))
+        return self.sample_instance(self.random.choice(TRAIN_IDS, p=p))
 
     def sample_val(self, p=None):
         assert False
-        return self.sample_instance(self.random.choice(TRAIN_IDS))
+        return self.sample_instance(self.random.choice(TRAIN_IDS, p=p))
 
     def sample_test(self, p=None):
-        return self.sample_instance(self.random.choice(TEST_IDS))
+        return self.sample_instance(self.random.choice(TEST_IDS, p=p))
 
     def reset(self, insts):
         return [inst.state.features() for inst in insts]
