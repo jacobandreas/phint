@@ -28,7 +28,7 @@ CRAFTS = {
     "axe_?_?": ["axe_%s_%s" % (v1, v2) for v1 in WOOD_VARIANTS for v2 in STONE_VARIANTS],
     "trap_?": ["trap_%s" % v for v in ORE_VARIANTS],
     "sword_?_?": ["sword_%s_%s" % (v1, v2) for v1 in ORE_VARIANTS for v2 in STONE_VARIANTS],
-    "bridge_?": ["bridge_%s" % v for v in ORE_VARIANTS]
+    "bridge_?": ["bridge_%s" % v for v in STONE_VARIANTS]
 }
 
 TEMPLATES = {
