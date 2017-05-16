@@ -5,7 +5,7 @@ import numpy as np
 import re
 from skimage.measure import block_reduce
 
-SIZE = 11
+SIZE = 7
 WINDOW_SIZE = 5
 
 WOOD_VARIANTS = ["oak", "pine", "birch"]
@@ -20,9 +20,9 @@ INGREDIENTS = (
 )
 
 CRAFTS = {
-    "stick_?": ["stick_%s" % v for v in WOOD_VARIANTS],
-    "metal_?": ["metal_%s" % v for v in ORE_VARIANTS],
-    "rope": ["rope"],
+    #"stick_?": ["stick_%s" % v for v in WOOD_VARIANTS],
+    #"metal_?": ["metal_%s" % v for v in ORE_VARIANTS],
+    #"rope": ["rope"],
     "shovel_?_?": ["shovel_%s_%s" % (v1, v2) for v1 in WOOD_VARIANTS for v2 in ORE_VARIANTS],
     "ladder_?": ["ladder_%s" % v for v in WOOD_VARIANTS],
     "axe_?_?": ["axe_%s_%s" % (v1, v2) for v1 in WOOD_VARIANTS for v2 in STONE_VARIANTS],
@@ -32,15 +32,20 @@ CRAFTS = {
 }
 
 TEMPLATES = {
-    "stick_?": ["wood_?"],
-    "metal_?": ["ore_?"],
-    "rope": ["grass"],
-    "shovel_?_?": ["stick_?", "metal_?"],
-    "ladder_?": ["stick_?", "rope"],
-    "axe_?_?": ["stick_?", "stone_?"],
-    "trap_?": ["metal_?", "rope"],
-    "sword_?_?": ["metal_?", "stone_?"],
-    "bridge_?": ["rope", "stone_?"]
+    #"stick_?": ["wood_?"],
+    #"metal_?": ["ore_?"],
+    #"rope": ["grass"],
+    #"axe_?_?": ["stick_?", "stone_?"],
+    #"trap_?": ["metal_?", "rope"],
+    #"sword_?_?": ["metal_?", "stone_?"],
+    #"bridge_?": ["rope", "stone_?"]
+
+    "shovel_?_?": ["wood_?", "ore_?"],
+    "ladder_?": ["wood_?", "grass"],
+    "axe_?_?": ["wood_?", "stone_?"],
+    "trap_?": ["ore_?", "grass"],
+    "sword_?_?": ["ore_?", "stone_?"],
+    "bridge_?": ["grass", "stone_?"]
 }
 
 RECIPES = {}
@@ -79,6 +84,7 @@ for group in CRAFTS.values():
                 specialized.append(ingredient)
         #print goal, specialized
         HINTS.append((goal, specialized))
+np.random.shuffle(HINTS)
 
 for x in RECIPES.items():
     print x
@@ -211,7 +217,7 @@ class Minicraft2World(object):
         grid = np.zeros((SIZE, SIZE, len(self.kind_to_obs)))
         for k in self.ingredients:
             obs = self.kind_to_obs[k]
-            for _ in range(2):
+            for _ in range(1):
                 x, y = random_free(grid, self.random)
                 grid[x, y, obs] = 1
 
@@ -311,13 +317,17 @@ class Minicraft2State(object):
                 new_inventory[self.world.obs_to_kind[obs]] += 1
                 new_grid[nx, ny, obs] = 0
         elif action == CRAFT:
-            for product, ingredients in self.world.recipes.items():
-                if all(self.inventory[ing] > 0 for ing in ingredients):
-                    new_inventory = self.inventory.copy()
-                    new_inventory[product] += 1
-                    for ing in ingredients:
-                        new_inventory[ing] -= 1
-                    break
+            new_inventory = self.inventory.copy()
+            more = True
+            while more:
+                more = False
+                for product, ingredients in self.world.recipes.items():
+                    if all(new_inventory[ing] > 0 for ing in ingredients):
+                        new_inventory[product] += 1
+                        for ing in ingredients:
+                            new_inventory[ing] -= 1
+                        #more = True
+                        break
 
         n_x = x + dx
         n_y = y + dy
