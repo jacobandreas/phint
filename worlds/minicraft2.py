@@ -8,12 +8,15 @@ from skimage.measure import block_reduce
 SIZE = 7
 WINDOW_SIZE = 5
 
-WOOD_VARIANTS = ["oak", "pine", "birch"]
-ORE_VARIANTS = ["copper", "iron", "nickel"]
-STONE_VARIANTS = ["granite", "quartz", "slate"]
+#WOOD_VARIANTS = ["oak", "pine", "birch"]
+#ORE_VARIANTS = ["copper", "iron", "nickel"]
+#STONE_VARIANTS = ["granite", "quartz", "slate"]
 #WOOD_VARIANTS = ["oak", "pine"]
 #ORE_VARIANTS = ["copper", "iron"]
 #STONE_VARIANTS = ["granite", "quartz"]
+WOOD_VARIANTS = ["oak"]
+ORE_VARIANTS = ["copper"]
+STONE_VARIANTS = ["granite"]
 
 INGREDIENTS = (
     ["wood_%s" % v for v in WOOD_VARIANTS]
