@@ -27,11 +27,11 @@ class DistillationTrainer(object):
         successes = []
 
         for i_train in range(world.n_train):
-            print "===\ntask %d" % i_train
+            logging.info("task %d" % i_train)
             probs = np.zeros(world.n_train)
             probs[i_train] = 1
             task = world.sample_train(probs).task
-            print task
+            logging.info(str(task))
             model.load(self.config.name, self.session)
 
             task_successes = []
@@ -51,8 +51,8 @@ class DistillationTrainer(object):
                     if not objective.ready():
                         continue
                     objective.train(self.session)
-                print i, total_reward / n_update
-            print len(task_successes)
+                logging.info("%d %f" % (i, total_reward / n_update))
+            logging.info(str(len(task_successes)))
             successes.append((task, task_successes))
 
         with open(os.path.join(self.config.experiment_dir, "paths.pkl"), "wb") as pickle_f:
