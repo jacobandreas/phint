@@ -31,12 +31,12 @@ objective:
   #step_size: 0.01
   step_size: 0.001
   entropy_bonus: 0.001
-  n_train_batch: 20000
+  n_train_batch: 5000
 
 trainer:
   #name: RlLabTrainer
   #algo: VPG
-  name: CurriculumTrainer 
+  name: DistillationTrainer 
   max_rollout_len: 100
   n_iters: 10000
   n_rollout_batch: 100

@@ -1,5 +1,6 @@
 from curriculum import CurriculumTrainer
 from imitation import ImitationTrainer
+from distillation import DistillationTrainer
 #from rllab_wrapper import RlLabTrainer
 
 def load(config, session):
