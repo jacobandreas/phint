@@ -12,7 +12,7 @@ model:
   name: ReprModel
   intrinsic_bonus: 0
   actor:
-    n_hidden: [128, 64]
+    n_hidden: [128, 128]
     ret_bias: 0
 
   controller:
@@ -37,7 +37,6 @@ trainer:
   #name: RlLabTrainer
   #algo: VPG
   name: DistillationTrainer 
-  #name: ImitationTrainer
   max_rollout_len: 100
   n_iters: 10000
   n_rollout_batch: 100
