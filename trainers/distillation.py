@@ -35,14 +35,14 @@ class DistillationTrainer(object):
             successes = []
             #for i in range(10):
             i = 0
-            while len(successes) < 10000:
+            while len(successes) < 1000:
                 total_reward = 0
                 for j in range(n_update):
                     inst = [world.sample_train(probs) for _ in range(n_batch)]
                     bufs, rewards, _ = _do_rollout(self.config, world, inst,
                             model, n_batch, self.session)
                     total_reward += rewards.sum()
-                    if rewards.sum() > .9 * n_batch:
+                    if rewards.sum() > .95 * n_batch:
                         for it, r, buf in zip(inst, rewards, bufs):
                             # TODO criterion
                             if r > 0:
@@ -55,6 +55,7 @@ class DistillationTrainer(object):
                 i += 1
             logging.info(str(len(successes)))
 
+            successes = successes[:1000]
             with open(
                     os.path.join(
                         self.config.experiment_dir,
