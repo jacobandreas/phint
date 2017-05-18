@@ -33,7 +33,9 @@ class DistillationTrainer(object):
             model.load(self.config.name, self.session)
 
             successes = []
-            for i in range(10):
+            #for i in range(10):
+            i = 0
+            while len(successes) < 10000:
                 total_reward = 0
                 for j in range(n_update):
                     inst = [world.sample_train(probs) for _ in range(n_batch)]
@@ -50,6 +52,7 @@ class DistillationTrainer(object):
                         continue
                     objective.train(self.session)
                 logging.info("%d %f" % (i, total_reward / n_update))
+                i += 1
             logging.info(str(len(successes)))
 
             with open(
