@@ -24,8 +24,6 @@ class DistillationTrainer(object):
         self.session.run(tf.global_variables_initializer())
         model.save(self.session)
 
-        successes = []
-
         for i_train in range(world.n_train):
             logging.info("task %d" % i_train)
             probs = np.zeros(world.n_train)
@@ -34,7 +32,7 @@ class DistillationTrainer(object):
             logging.info(str(task))
             model.load(self.config.name, self.session)
 
-            task_successes = []
+            successes = []
             for i in range(10):
                 total_reward = 0
                 for j in range(n_update):
@@ -42,18 +40,21 @@ class DistillationTrainer(object):
                     bufs, rewards, _ = _do_rollout(self.config, world, inst,
                             model, n_batch, self.session)
                     total_reward += rewards.sum()
-                    if rewards.sum() > .0 * n_batch:
-                        for r, buf in zip(rewards, bufs):
+                    if rewards.sum() > .9 * n_batch:
+                        for it, r, buf in zip(inst, rewards, bufs):
                             # TODO criterion
                             if r > 0:
-                                task_successes.append(buf)
+                                successes.append((it.task, buf))
                     objective.experience(bufs)
                     if not objective.ready():
                         continue
                     objective.train(self.session)
                 logging.info("%d %f" % (i, total_reward / n_update))
-            logging.info(str(len(task_successes)))
-            successes.append((task, task_successes))
+            logging.info(str(len(successes)))
 
-        with open(os.path.join(self.config.experiment_dir, "paths.pkl"), "wb") as pickle_f:
-            pickle.dump(successes, pickle_f, pickle.HIGHEST_PROTOCOL)
+            with open(
+                    os.path.join(
+                        self.config.experiment_dir,
+                        "paths.%d.pkl" % i_train), 
+                    "wb") as pickle_f:
+                pickle.dump(successes, pickle_f, pickle.HIGHEST_PROTOCOL)

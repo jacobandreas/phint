@@ -94,7 +94,7 @@ for group in CRAFTS.values():
 for ingredient in INGREDIENTS:
     HINTS.append((ingredient, [ingredient]))
 
-np.random.shuffle(HINTS)
+util.next_random().shuffle(HINTS)
 
 for x in RECIPES.items():
     print x
