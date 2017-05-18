@@ -37,6 +37,7 @@ trainer:
   #name: RlLabTrainer
   #algo: VPG
   name: DistillationTrainer 
+  #name: ImitationTrainer
   max_rollout_len: 100
   n_iters: 10000
   n_rollout_batch: 100

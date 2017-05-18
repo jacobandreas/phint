@@ -60,6 +60,6 @@ class ImitationTrainer(object):
                 logging.info("")
                 err = 0
                 model.save(self.session)
-                if i_iter % (n_update * 50) == 0 and eval_thunk is not None:
+                if i_iter % (n_update * 10) == 0 and eval_thunk is not None:
                     eval_thunk()
                     model.load(self.config.name, self.session)

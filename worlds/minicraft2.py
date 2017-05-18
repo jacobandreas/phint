@@ -2,18 +2,19 @@ from misc import array, util
 
 from collections import namedtuple
 import numpy as np
+import pickle
 import re
 from skimage.measure import block_reduce
 
 SIZE = 7
 WINDOW_SIZE = 5
 
-#WOOD_VARIANTS = ["oak", "pine", "birch"]
-#ORE_VARIANTS = ["copper", "iron", "nickel"]
-#STONE_VARIANTS = ["granite", "quartz", "slate"]
-WOOD_VARIANTS = ["oak", "pine"]
-ORE_VARIANTS = ["copper", "iron"]
-STONE_VARIANTS = ["granite", "quartz"]
+WOOD_VARIANTS = ["oak", "pine", "birch"]
+ORE_VARIANTS = ["copper", "iron", "nickel"]
+STONE_VARIANTS = ["granite", "quartz", "slate"]
+#WOOD_VARIANTS = ["oak", "pine"]
+#ORE_VARIANTS = ["copper", "iron"]
+#STONE_VARIANTS = ["granite", "quartz"]
 #WOOD_VARIANTS = ["oak"]
 #ORE_VARIANTS = ["copper"]
 #STONE_VARIANTS = ["granite"]
@@ -164,9 +165,10 @@ def neighbors(pos, dir=None):
     return neighbors
 
 class Minicraft2Instance(object):
-    def __init__(self, task, init_state):
+    def __init__(self, task, init_state, demo=None):
         self.task = task
         self.state = init_state
+        self.demo = demo
 
 class Minicraft2World(object):
     def __init__(self, config):
@@ -215,13 +217,31 @@ class Minicraft2World(object):
         self.n_val = 0
         self.n_test = len(TEST_IDS)
 
+        self.demos = {}
+        #for i in range(len(TRAIN_IDS)):
+        #    with open("data/minicraft/paths.short.%d.pkl" % i, "rb") as pf:
+        #        paths = pickle.load(pf)
+        #        task = paths[0][0]._replace(hint=None)
+        #        assert task == self.tasks[TRAIN_IDS[i]]
+        #        self.demos[TRAIN_IDS[i]] = [v for k, v in paths]
+
     def sample_instance(self, task_id):
         task = self.tasks[task_id]
         _, steps = self.hints[task_id]
         indexed_steps = [self.vocab[w] for w in steps]
         task = task._replace(hint=tuple(indexed_steps))
+        demo = None
+        if task_id in self.demos:
+            episodes = self.demos[task_id]
+            episode = episodes[self.random.randint(len(episodes))]
+            demo = []
+            for transition in episode:
+                demo.append((
+                    FakeMinicraft2State(transition.s1),
+                    transition.a[0],
+                    FakeMinicraft2State(transition.s2)))
         state = self.sample_state(task)
-        return Minicraft2Instance(task, state)
+        return Minicraft2Instance(task, state, demo)
 
     def sample_state(self, task):
         grid = np.zeros((SIZE, SIZE, len(self.kind_to_obs)))
@@ -257,6 +277,16 @@ class Minicraft2World(object):
             rewards.append(reward)
             stops.append(stop)
         return features, rewards, stops
+
+class FakeMinicraft2State(object):
+    def __init__(self, features):
+        self._features = features
+
+    def features(self):
+        return self._features
+
+    def step(self, action):
+        assert False
 
 class Minicraft2State(object):
     def __init__(self, world, grid, pos, dir, inventory, task):
