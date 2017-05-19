@@ -42,7 +42,7 @@ class DistillationTrainer(object):
                     bufs, rewards, _ = _do_rollout(self.config, world, inst,
                             model, n_batch, self.session)
                     total_reward += rewards.sum()
-                    if rewards.sum() > .8 * n_batch:
+                    if rewards.sum() > .9 * n_batch:
                         for it, r, buf in zip(inst, rewards, bufs):
                             # TODO criterion
                             if r > 0:
