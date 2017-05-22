@@ -1,0 +1,42 @@
+name: minicraft_task_rltrain
+load: minicraft_task_rltrain
+train: true
+eval: true
+
+world: 
+  name: Minicraft2World
+  train_fold: train
+  test_fold: val
+
+model: 
+  name: ReprModel
+  intrinsic_bonus: 0
+  actor:
+    n_hidden: [64, 64]
+    ret_bias: 0
+
+  controller:
+    n_embed: 64
+    train_embeddings: true
+    param_ling: false
+    param_task: true
+
+  critic:
+    type: linear
+    by_task: true
+
+objective:
+  discount: 0.97
+  step_size: 0.001
+  entropy_bonus: 0.001
+  n_train_batch: 5000
+
+trainer:
+  name: CurriculumTrainer
+  max_rollout_len: 100
+  n_iters: 10000
+  n_rollout_batch: 100
+  n_update: 50
+  resample_every: 1
+  switch_iter: 0
+  log_each_task: false
