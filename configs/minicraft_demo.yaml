@@ -1,5 +1,5 @@
-name: minicraft_ling
-load: minicraft_ling
+name: minicraft_demo
+load: minicraft_demo
 train: true
 eval: true
 
@@ -17,10 +17,9 @@ model:
 
   controller:
     n_embed: 64
-    #embeddings: "data/embeddings.txt"
     train_embeddings: true
-    param_ling: true
-    param_task: false
+    param_ling: false
+    param_task: true
 
   critic:
     type: linear
@@ -28,15 +27,12 @@ model:
 
 objective:
   discount: 0.97
-  #step_size: 0.01
   step_size: 0.001
   entropy_bonus: 0.001
   n_train_batch: 5000
 
 trainer:
-  #name: RlLabTrainer
-  #algo: VPG
-  name: DistillationTrainer 
+  name: DemonstrationTrainer
   max_rollout_len: 100
   n_iters: 10000
   n_rollout_batch: 100
@@ -44,15 +40,3 @@ trainer:
   resample_every: 1
   switch_iter: 0
   log_each_task: false
-
-#objective:
-#  discount: 0.99
-#  step_size: 0.01
-#  entropy_bonus: 0.01
-#  n_train_batch: 20000
-#
-#trainer:
-#  name: RlLabTrainer
-#  algo: TRPO
-#  max_rollout_len: 100
-#  n_iters: 10000

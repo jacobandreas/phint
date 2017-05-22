@@ -24,9 +24,9 @@ class Reinforce(object):
 
         optimizer = tf.train.RMSPropOptimizer(config.objective.step_size)
         self.o_train_actor = optimizer.minimize(self.t_actor_loss)
-        if config.model.controller.param_task:
-            self.o_train_repr = optimizer.minimize(
-                    self.t_actor_loss, var_list=model.repr_params)
+        self.o_train_repr = optimizer.minimize(
+                #self.t_actor_loss, var_list=model.repr_params)
+                self.t_actor_loss)
         self.o_train_critic = optimizer.minimize(self.t_critic_loss)
 
         self.buffer = []

@@ -27,20 +27,26 @@ class AdaptationEvaluator(object):
         for i_task in range(self.world.n_test):
             self.session.run(tf.global_variables_initializer())
             self.model.load(self.config.load, self.session)
-            self.session.run([self.model.o_reset_temp])
+            #self.session.run([self.model.o_reset_temp])
             probs = np.zeros(self.world.n_test)
             probs[i_task] = 1
             updates = 0
             success = False
-            while updates < 200:
-                inst = [self.world.sample_test(probs) for _ in range(n_batch)]
-                buf, rew, comp = _do_rollout(
-                        self.config, self.world, inst, self.model, n_batch, self.session)
-                self.objective.experience(buf)
-                if not self.objective.ready():
-                    continue
-                updates += 1
-                self.objective.train(self.session, repr_only=True)
+            while updates < 100:
+                total_rew = 0
+                for i in range(5):
+                    inst = [self.world.sample_test(probs) for _ in range(n_batch)]
+                    buf, rew, comp = _do_rollout(
+                            self.config, self.world, inst, self.model, n_batch, self.session)
+                    total_rew += np.mean(rew)
+                    self.objective.experience(buf)
+                    if not self.objective.ready():
+                        continue
+                    updates += 1
+                    self.objective.train(self.session, repr_only=True)
+
+                total_rew /= 5
+                logging.info("[.] %f" % total_rew)
                 if np.mean(comp) == 1:
                     logging.info("[ad success] %d %d", i_task, updates)
                     success = True
@@ -49,7 +55,7 @@ class AdaptationEvaluator(object):
                 #    logging.info("[ad reward] %d %f", i_task, np.mean(rew))
                 #    logging.info("[ad complete] %d %f", i_task, np.mean(comp))
             if not success:
-                logging.info("[ad failure] %d %f %f", i_task, np.mean(rew), np.mean(comp))
+                logging.info("[ad failure] %d %f %f", i_task, total_rew, np.mean(comp))
 
         logging.info("")
         self.model.load(self.config.load, self.session)

@@ -11,7 +11,7 @@ import pickle
 import time
 import tensorflow as tf
 
-class DistillationTrainer(object):
+class DemonstrationTrainer(object):
     def __init__(self, config, session):
         self.config = config
         self.session = session

@@ -83,7 +83,7 @@ class CurriculumTrainer(object):
         #task_probs = None
 
         model.save(self.session)
-        eval_thunk()
+        #eval_thunk()
         while True:
             inst = [world.sample_train(task_probs) for _ in range(n_batch)]
             #inits = [str(i.state.blocks) + " " + str(i.state.goal) for i in inst]

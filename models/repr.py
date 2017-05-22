@@ -11,26 +11,75 @@ import os
 
 ModelState = namedtuple("ModelState", ["task_id", "hint"])
 
+#class EmbeddingController(object):
+#    def __init__(self, config, t_obs, t_task, t_hint, world):
+#        param_ling = config.model.controller.param_ling
+#        param_task = config.model.controller.param_task
+#
+#        with tf.variable_scope("ling_repr") as repr_scope:
+#            if hasattr(config.model.controller, "embeddings"):
+#                embedding_dict = embeddings.load(
+#                        config.model.controller.embeddings, world.vocab)
+#                assert embedding_dict.shape[1] == config.model.controller.n_embed
+#                t_embed = _embed_pretrained(t_hint, embedding_dict)
+#            else:
+#                t_embed = _embed(t_hint, world.n_vocab, config.model.controller.n_embed)
+#            if not config.model.controller.train_embeddings:
+#                t_embed = tf.stop_gradient(t_embed)
+#            t_ling_repr = tf.reduce_mean(t_embed, axis=1)
+#            self.repr_params = util.vars_in_scope(repr_scope)
+#
+#        with tf.variable_scope("task_repr") as repr_scope:
+#            t_task_repr = _embed(
+#                    t_task, world.n_tasks, config.model.controller.n_embed)
+#            self.repr_params = util.vars_in_scope(repr_scope)
+#
+#        if param_ling and param_task:
+#            self.t_repr = t_ling_repr + t_task_repr
+#        elif param_ling:
+#            self.t_repr = t_ling_repr
+#        elif param_task:
+#            self.t_repr = t_task_repr
+#        else:
+#            self.t_repr = tf.zeros_like(t_task_repr)
+#        self.t_ling_repr = t_ling_repr
+#
+#        #self.t_repr = self.t_repr # + tf.random_normal(shape=tf.shape(self.t_repr), stddev=0.5)
+#        self.t_repr = tf.nn.dropout(self.t_repr, 0.75)
+#
+#        self.t_dec_loss = 0
+#        # TODO(jda) including this causes segfaults on the server
+#        #with tf.variable_scope("ling_decoder"):
+#        #    cell = tf.contrib.rnn.GRUCell(config.model.controller.n_hidden)
+#        #    cell = tf.contrib.rnn.OutputProjectionWrapper(cell, world.n_vocab)
+#        #    t_dec_embed = t_embed[:, :-1, :]
+#        #    t_dec_target = self.t_hint[:, 1:]
+#        #    t_dec_pred, _ = tf.nn.dynamic_rnn(cell, t_dec_embed, initial_state=self.t_repr)
+#        #    self.t_dec_loss = tf.reduce_sum(
+#        #            tf.nn.sparse_softmax_cross_entropy_with_logits(
+#        #                labels=t_dec_target,
+#        #                logits=t_dec_pred),
+#        #            axis=1)
+#
+#    def init(self, inst, obs):
+#        return [ModelState(i.task.id, i.task.hint) for i in inst]
+
 class EmbeddingController(object):
     def __init__(self, config, t_obs, t_task, t_hint, world):
         param_ling = config.model.controller.param_ling
         param_task = config.model.controller.param_task
 
-        with tf.variable_scope("ling_repr"):
-            if hasattr(config.model.controller, "embeddings"):
-                embedding_dict = embeddings.load(
-                        config.model.controller.embeddings, world.vocab)
-                assert embedding_dict.shape[1] == config.model.controller.n_embed
-                t_embed = _embed_pretrained(t_hint, embedding_dict)
-            else:
-                t_embed = _embed(t_hint, world.n_vocab, config.model.controller.n_embed)
+        param_size = config.model.actor.n_hidden[-1] * world.n_act
+
+        with tf.variable_scope("ling_repr") as repr_scope:
+            t_embed = _embed(t_hint, world.n_vocab, param_size)
             if not config.model.controller.train_embeddings:
                 t_embed = tf.stop_gradient(t_embed)
             t_ling_repr = tf.reduce_mean(t_embed, axis=1)
+            self.repr_params = util.vars_in_scope(repr_scope)
 
         with tf.variable_scope("task_repr") as repr_scope:
-            t_task_repr = _embed(
-                    t_task, world.n_tasks, config.model.controller.n_embed)
+            t_task_repr = _embed(t_task, world.n_tasks, param_size)
             self.repr_params = util.vars_in_scope(repr_scope)
 
         if param_ling and param_task:
@@ -43,38 +92,40 @@ class EmbeddingController(object):
             self.t_repr = tf.zeros_like(t_task_repr)
         self.t_ling_repr = t_ling_repr
 
-        self.t_repr = self.t_repr # + tf.random_normal(shape=tf.shape(self.t_repr), stddev=0.5)
-
-        self.t_dec_loss = 0
-        # TODO(jda) including this causes segfaults on the server
-        #with tf.variable_scope("ling_decoder"):
-        #    cell = tf.contrib.rnn.GRUCell(config.model.controller.n_hidden)
-        #    cell = tf.contrib.rnn.OutputProjectionWrapper(cell, world.n_vocab)
-        #    t_dec_embed = t_embed[:, :-1, :]
-        #    t_dec_target = self.t_hint[:, 1:]
-        #    t_dec_pred, _ = tf.nn.dynamic_rnn(cell, t_dec_embed, initial_state=self.t_repr)
-        #    self.t_dec_loss = tf.reduce_sum(
-        #            tf.nn.sparse_softmax_cross_entropy_with_logits(
-        #                labels=t_dec_target,
-        #                logits=t_dec_pred),
-        #            axis=1)
+        # TODO keep?
+        # TODO bias?
+        #self.t_repr = tf.nn.dropout(self.t_repr, 0.75)
 
     def init(self, inst, obs):
         return [ModelState(i.task.id, i.task.hint) for i in inst]
 
+#class Actor(object):
+#    def __init__(self, config, t_obs, t_repr, world):
+#        prev_layer = tf.concat((t_obs, t_repr), axis=1)
+#        #prev_layer = t_obs
+#        #widths = config.model.actor.n_hidden + [world.n_act + 2]
+#        widths = config.model.actor.n_hidden + [world.n_act]
+#        activations = [tf.nn.tanh] * (len(widths) - 1) + [None]
+#        with tf.variable_scope("actor") as scope:
+#            #bias = np.zeros((1, world.n_act + 2), dtype=np.float32)
+#            bias = np.zeros((1, world.n_act), dtype=np.float32)
+#            bias[0, -2:] = config.model.actor.ret_bias
+#            t_bias = tf.constant(bias)
+#            self.t_action_param = _mlp(prev_layer, widths, activations) + t_bias
+
 class Actor(object):
     def __init__(self, config, t_obs, t_repr, world):
-        prev_layer = tf.concat((t_obs, t_repr), axis=1)
-        #prev_layer = t_obs
-        #widths = config.model.actor.n_hidden + [world.n_act + 2]
-        widths = config.model.actor.n_hidden + [world.n_act]
-        activations = [tf.nn.tanh] * (len(widths) - 1) + [None]
+        widths = config.model.actor.n_hidden
+        # TODO relu?
+        activations = [tf.nn.tanh] * len(widths)
         with tf.variable_scope("actor") as scope:
-            #bias = np.zeros((1, world.n_act + 2), dtype=np.float32)
             bias = np.zeros((1, world.n_act), dtype=np.float32)
             bias[0, -2:] = config.model.actor.ret_bias
             t_bias = tf.constant(bias)
-            self.t_action_param = _mlp(prev_layer, widths, activations) + t_bias
+            last_hidden = _mlp(t_obs, widths, activations)
+            t_mat = tf.reshape(t_repr, (-1, widths[-1], world.n_act))
+            self.t_action_param = tf.einsum("ij,ijk->ik", last_hidden, t_mat) + t_bias
+            #self.t_action_param = tf.dot(t_repr, last_hidden) + t_bias
 
 class Critic(object):
     def __init__(self, config, t_obs, t_repr, t_task, world):

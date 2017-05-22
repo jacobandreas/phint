@@ -28,8 +28,10 @@ def main():
     session = tf.Session(graph=graph)
     with graph.as_default(), session.as_default():
         model = models.load(config, world)
-        objective = Reinforce(config, model)
-        #objective = Cloning(config, model)
+        if config.trainer.name == "ImitationTrainer":
+            objective = Cloning(config, model)
+        else:
+            objective = Reinforce(config, model)
         trainer = trainers.load(config, session)
         #trainer = RlLabTrainer(config, world, model, session)
 
@@ -41,18 +43,20 @@ def main():
     config_name = sys.argv[1]
     with open(config_name) as config_f:
         config_copy = Struct(**yaml.load(config_f))
-    config_copy.model.controller.param_ling = False
-    config_copy.model.controller.param_task = True
+    #config_copy.model.controller.param_ling = False
+    #config_copy.model.controller.param_task = True
     with eval_graph.as_default(), eval_session.as_default():
         ad_model = models.load(config_copy, world)
         ad_objective = Reinforce(config_copy, ad_model)
         ad_evaluator = AdaptationEvaluator(config_copy, world, ad_model, ad_objective, eval_session)
         #ad_evaluator = RllAdaptationEvaluator(config_copy, world, ad_model, eval_session)
-    def _evaluate():
+    def _evaluate_short():
         zs_evaluator.evaluate()
-        #with eval_graph.as_default(), eval_session.as_default():
-        #    ad_evaluator.evaluate()
 
+    def _evaluate_full():
+        zs_evaluator.evaluate()
+        with eval_graph.as_default(), eval_session.as_default():
+            ad_evaluator.evaluate()
 
     # rllab might have screwed with this
     logging.getLogger().setLevel(logging.DEBUG)
@@ -60,10 +64,10 @@ def main():
 
     if config.train:
         with graph.as_default(), session.as_default():
-            trainer.train(world, model, objective, _evaluate if config.eval else None)
+            trainer.train(world, model, objective, _evaluate_short if config.eval else None)
 
     if config.eval:
-        _evaluate()
+        _evaluate_full()
 
 def configure():
     # load config
@@ -81,8 +85,8 @@ def configure():
 
 def setup_logging(config):
     log_name = os.path.join(config.experiment_dir, "run.log")
-    #logging.basicConfig(filename=log_name, level=logging.DEBUG,
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
+    logging.basicConfig(filename=log_name, level=logging.DEBUG,
+    #logging.basicConfig(stream=sys.stdout, level=logging.DEBUG,
             format='%(asctime)s %(levelname)-8s %(message)s')
     def handler(type, value, tb):
         logging.exception("Uncaught exception: %s", str(value))

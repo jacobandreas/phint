@@ -134,6 +134,8 @@ TEST_IDS = list(range(len(HINTS))[::4])
 #TEST_IDS = list(range(len(HINTS))[::2])
 TRAIN_IDS = [i for i in range(len(HINTS)) if i not in TEST_IDS]
 
+#TEST_IDS = list(range(len(HINTS)))
+
 #TEST_IDS = [len(HINTS)-1]
 #TRAIN_IDS = [len(HINTS)-1]
 
@@ -219,8 +221,8 @@ class Minicraft2World(object):
 
         self.demos = {}
         #for i in range(len(TRAIN_IDS)):
-        #    with open("data/minicraft/paths.short.%d.pkl" % i, "rb") as pf:
-        #        paths = pickle.load(pf)
+        #    with open("data/minicraft/paths.%d.pkl" % i, "rb") as pf:
+        #        paths = pickle.load(pf)[-1000:]
         #        task = paths[0][0]._replace(hint=None)
         #        assert task == self.tasks[TRAIN_IDS[i]]
         #        self.demos[TRAIN_IDS[i]] = [v for k, v in paths]

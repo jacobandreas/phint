@@ -47,7 +47,7 @@ class ImitationTrainer(object):
                 logging.info("[err] %s", err / n_update)
 
                 rew = 0
-                for i in range(10):
+                for i in range(5):
                     inst = [world.sample_train() for _ in range(n_batch)]
                     rollouts, rew_here, _ = _do_rollout(self.config, world, inst, model, n_batch, self.session)
                     #for rollout, it in zip(rollouts[:1], inst[:1]):
@@ -55,11 +55,11 @@ class ImitationTrainer(object):
                     #    print " ".join([str(a) for s, a, s_ in it.demo])
                     #    print
                     rew += rew_here
-                logging.info("[rew] %f", np.mean(rew) / 10)
+                logging.info("[rew] %f", np.mean(rew) / 5)
 
                 logging.info("")
                 err = 0
                 model.save(self.session)
-                if i_iter % (n_update * 10) == 0 and eval_thunk is not None:
+                if i_iter % (n_update * 20) == 0 and eval_thunk is not None:
                     eval_thunk()
                     model.load(self.config.name, self.session)
