@@ -82,6 +82,15 @@ class EmbeddingController(object):
             t_task_repr = _embed(t_task, world.n_tasks, param_size)
             task_params = util.vars_in_scope(repr_scope)
 
+        with tf.variable_scope("null_repr") as repr_scope:
+            t_null_repr = tf.get_variable(
+                    "repr",
+                    shape=(param_size,),
+                    initializer=tf.uniform_unit_scaling_initializer())
+            t_null_repr = tf.expand_dims(t_null_repr, 0)
+            t_null_repr = tf.tile(t_null_repr, (tf.shape(t_obs)[0], 1))
+            null_params = util.vars_in_scope(repr_scope)
+
         if param_ling and param_task:
             self.t_repr = t_ling_repr + t_task_repr
         elif param_ling:
@@ -89,10 +98,11 @@ class EmbeddingController(object):
         elif param_task:
             self.t_repr = t_task_repr
         else:
-            self.t_repr = tf.zeros_like(t_task_repr)
+            #self.t_repr = tf.zeros_like(t_task_repr)
+            self.t_repr = t_null_repr
         self.t_ling_repr = t_ling_repr
 
-        self.repr_params = ling_params + task_params
+        self.repr_params = ling_params + task_params + null_params
 
         # TODO keep?
         # TODO bias?
