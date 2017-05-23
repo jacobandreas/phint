@@ -33,7 +33,7 @@ class AdaptationEvaluator(object):
             probs[i_task] = 1
             updates = 0
             success = False
-            while updates < 100:
+            while updates < 300:
                 total_rew = 0
                 for i in range(5):
                     inst = [self.world.sample_test(probs) for _ in range(n_batch)]
