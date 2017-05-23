@@ -76,11 +76,11 @@ class EmbeddingController(object):
             if not config.model.controller.train_embeddings:
                 t_embed = tf.stop_gradient(t_embed)
             t_ling_repr = tf.reduce_mean(t_embed, axis=1)
-            self.repr_params = util.vars_in_scope(repr_scope)
+            ling_params = util.vars_in_scope(repr_scope)
 
         with tf.variable_scope("task_repr") as repr_scope:
             t_task_repr = _embed(t_task, world.n_tasks, param_size)
-            self.repr_params = util.vars_in_scope(repr_scope)
+            task_params = util.vars_in_scope(repr_scope)
 
         if param_ling and param_task:
             self.t_repr = t_ling_repr + t_task_repr
@@ -91,6 +91,8 @@ class EmbeddingController(object):
         else:
             self.t_repr = tf.zeros_like(t_task_repr)
         self.t_ling_repr = t_ling_repr
+
+        self.repr_params = ling_params + task_params
 
         # TODO keep?
         # TODO bias?
@@ -123,6 +125,7 @@ class Actor(object):
             bias[0, -2:] = config.model.actor.ret_bias
             t_bias = tf.constant(bias)
             last_hidden = _mlp(t_obs, widths, activations)
+            last_hidden = tf.nn.l2_normalize(last_hidden, 1)
             t_mat = tf.reshape(t_repr, (-1, widths[-1], world.n_act))
             self.t_action_param = tf.einsum("ij,ijk->ik", last_hidden, t_mat) + t_bias
             #self.t_action_param = tf.dot(t_repr, last_hidden) + t_bias
@@ -165,7 +168,7 @@ class ReprModel(object):
                     #"temp", shape=(world.n_act,),
                     "temp", shape=(1),
                     #initializer=tf.constant_initializer(-1))
-                    initializer=tf.constant_initializer(-1))
+                    initializer=tf.constant_initializer(0))
             self.o_reset_temp = tf.assign(self.t_action_temp, (-1,))
             self.t_action_bias = 0
 

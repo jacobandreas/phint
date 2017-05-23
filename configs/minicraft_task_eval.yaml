@@ -18,8 +18,8 @@ model:
   controller:
     n_embed: 64
     train_embeddings: true
-    param_ling: true
-    param_task: false
+    param_ling: false
+    param_task: true
 
   critic:
     type: linear
@@ -34,7 +34,7 @@ objective:
 trainer:
   name: ImitationTrainer
   max_rollout_len: 100
-  n_iters: 10000
+  n_iters: 3000
   n_rollout_batch: 100
   n_update: 50
   resample_every: 1

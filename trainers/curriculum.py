@@ -141,3 +141,6 @@ class CurriculumTrainer(object):
                 if i_iter % (n_update * 20) == 0 and eval_thunk is not None:
                     eval_thunk()
                     model.load(self.config.name, self.session)
+
+            if i_iter >= self.config.trainer.n_iters:
+                break

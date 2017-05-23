@@ -134,6 +134,9 @@ TEST_IDS = list(range(len(HINTS))[::4])
 #TEST_IDS = list(range(len(HINTS))[::2])
 TRAIN_IDS = [i for i in range(len(HINTS)) if i not in TEST_IDS]
 
+#TRAIN_IDS = [TEST_IDS[3]]
+#TEST_IDS = [TEST_IDS[0]]
+
 #TEST_IDS = list(range(len(HINTS)))
 
 #TEST_IDS = [len(HINTS)-1]

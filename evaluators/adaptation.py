@@ -27,6 +27,7 @@ class AdaptationEvaluator(object):
         for i_task in range(self.world.n_test):
             self.session.run(tf.global_variables_initializer())
             self.model.load(self.config.load, self.session)
+
             #self.session.run([self.model.o_reset_temp])
             probs = np.zeros(self.world.n_test)
             probs[i_task] = 1
@@ -46,7 +47,7 @@ class AdaptationEvaluator(object):
                     self.objective.train(self.session, repr_only=True)
 
                 total_rew /= 5
-                logging.info("[.] %f" % total_rew)
+                logging.info("[%02d] %f" % (updates, total_rew))
                 if np.mean(comp) == 1:
                     logging.info("[ad success] %d %d", i_task, updates)
                     success = True
