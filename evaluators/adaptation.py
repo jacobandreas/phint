@@ -53,14 +53,18 @@ class AdaptationEvaluator(object):
                     hint_results[best_hint])
             logging.info("[gold] %s",
                     " ".join([self.world.vocab.get(w) for w in gold_hint]))
+            logging.info("[gues used] %d" % 200 * 20)
 
+            logging.info("[fine tuning]")
             #self.session.run([self.model.o_reset_temp])
             updates = 0
             success = False
+            total_used = 0
             while updates < 300:
                 total_rew = 0
                 for i in range(5):
                     inst = [self.world.sample_test(probs) for _ in range(n_batch)]
+                    total_used += n_batch
                     for it in inst:
                         it.task = it.task._replace(hint=best_hint)
                     buf, rew, comp = _do_rollout(
@@ -83,6 +87,7 @@ class AdaptationEvaluator(object):
                 #    logging.info("[ad complete] %d %f", i_task, np.mean(comp))
             if not success:
                 logging.info("[ad failure] %d %f %f", i_task, total_rew, np.mean(comp))
+            logging.info("[tune used] %d", total_used)
 
         logging.info("")
         self.model.load(self.config.load, self.session)
