@@ -43,8 +43,8 @@ def main():
     config_name = sys.argv[1]
     with open(config_name) as config_f:
         config_copy = Struct(**yaml.load(config_f))
-    #config_copy.model.controller.param_ling = False
-    #config_copy.model.controller.param_task = True
+    config_copy.model.controller.param_ling = False
+    config_copy.model.controller.param_task = True
     with eval_graph.as_default(), eval_session.as_default():
         ad_model = models.load(config_copy, world)
         ad_objective = Reinforce(config_copy, ad_model)
