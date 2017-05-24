@@ -13,11 +13,12 @@ import models
 #import rllab.misc.logger as rll_logger
 
 class AdaptationEvaluator(object):
-    def __init__(self, config, world, model, objective, session):
+    def __init__(self, config, world, model, objective, describer, session):
         self.config = config
         self.world = world
         self.model = model
         self.objective = objective
+        self.describer = describer
         self.session = session
 
     def evaluate(self):
@@ -27,16 +28,41 @@ class AdaptationEvaluator(object):
         for i_task in range(self.world.n_test):
             self.session.run(tf.global_variables_initializer())
             self.model.load(self.config.load, self.session)
-
-            #self.session.run([self.model.o_reset_temp])
             probs = np.zeros(self.world.n_test)
             probs[i_task] = 1
+
+            logging.info("[hint guessing]")
+            hint_results = {}
+            for i_guess in range(200):
+                hint, = self.describer.sample(1)
+                while hint in hint_results:
+                    hint, = self.describer.sample(1)
+                inst = [self.world.sample_test(probs) for _ in range(20)]
+                for it in inst:
+                    it.task = it.task._replace(hint=hint)
+
+                buf, rew, comp = _do_rollout(
+                        self.config, self.world, inst, self.model, 20,
+                        self.session)
+                hint_results[hint] = np.mean(rew)
+
+            best_hint = max(hint_results, key=lambda h: hint_results[h])
+            gold_hint = self.world.sample_test(probs).task.hint
+            logging.info("[guess] %s %f", 
+                    " ".join([self.world.vocab.get(w) for w in best_hint]),
+                    hint_results[best_hint])
+            logging.info("[gold] %s",
+                    " ".join([self.world.vocab.get(w) for w in gold_hint]))
+
+            #self.session.run([self.model.o_reset_temp])
             updates = 0
             success = False
             while updates < 300:
                 total_rew = 0
                 for i in range(5):
                     inst = [self.world.sample_test(probs) for _ in range(n_batch)]
+                    for it in inst:
+                        it.task = it.task._replace(hint=best_hint)
                     buf, rew, comp = _do_rollout(
                             self.config, self.world, inst, self.model, n_batch, self.session)
                     total_rew += np.mean(rew)

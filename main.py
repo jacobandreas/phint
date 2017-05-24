@@ -1,12 +1,13 @@
 #!/usr/bin/env python2
 
-from misc.util import Struct
-import worlds
-import models
-from objectives import Reinforce, Ppo, Cloning
-import trainers
 from evaluators.zero_shot import ZeroShotEvaluator
 from evaluators.adaptation import AdaptationEvaluator #, RllAdaptationEvaluator
+from misc.util import Struct
+import models
+from models.describer import Describer
+from objectives import Reinforce, Ppo, Cloning
+import trainers
+import worlds
 
 import logging
 import numpy as np
@@ -43,18 +44,20 @@ def main():
     config_name = sys.argv[1]
     with open(config_name) as config_f:
         config_copy = Struct(**yaml.load(config_f))
-    config_copy.model.controller.param_ling = False
-    config_copy.model.controller.param_task = True
+    #config_copy.model.controller.param_ling = False
+    #config_copy.model.controller.param_task = True
     with eval_graph.as_default(), eval_session.as_default():
         ad_model = models.load(config_copy, world)
         ad_objective = Reinforce(config_copy, ad_model)
-        ad_evaluator = AdaptationEvaluator(config_copy, world, ad_model, ad_objective, eval_session)
+        ad_describer = Describer(config, world, eval_session)
+        ad_evaluator = AdaptationEvaluator(config_copy, world, ad_model, ad_objective, ad_describer, eval_session)
         #ad_evaluator = RllAdaptationEvaluator(config_copy, world, ad_model, eval_session)
     def _evaluate_short():
         zs_evaluator.evaluate()
 
     def _evaluate_full():
-        zs_evaluator.evaluate()
+        #zs_evaluator.evaluate()
+        ad_describer.train()
         with eval_graph.as_default(), eval_session.as_default():
             ad_evaluator.evaluate()
 
