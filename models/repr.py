@@ -82,14 +82,18 @@ class EmbeddingController(object):
             t_task_repr = _embed(t_task, world.n_tasks, param_size)
             task_params = util.vars_in_scope(repr_scope)
 
-        with tf.variable_scope("null_repr") as repr_scope:
-            t_null_repr = tf.get_variable(
-                    "repr",
-                    shape=(param_size,),
-                    initializer=tf.uniform_unit_scaling_initializer())
-            t_null_repr = tf.expand_dims(t_null_repr, 0)
-            t_null_repr = tf.tile(t_null_repr, (tf.shape(t_obs)[0], 1))
-            null_params = util.vars_in_scope(repr_scope)
+        if not (param_ling or param_task):
+            with tf.variable_scope("null_repr") as repr_scope:
+                t_null_repr = tf.get_variable(
+                        "repr",
+                        shape=(param_size,),
+                        initializer=tf.uniform_unit_scaling_initializer())
+                t_null_repr = tf.expand_dims(t_null_repr, 0)
+                t_null_repr = tf.tile(t_null_repr, (tf.shape(t_obs)[0], 1))
+                null_params = util.vars_in_scope(repr_scope)
+        else:
+            null_params = []
+            t_null_repr = 0
 
         if param_ling and param_task:
             self.t_repr = t_ling_repr + t_task_repr
